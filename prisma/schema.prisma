@@ -1,0 +1,458 @@
+// ─────────────────────────────────────────────────────────────────────────
+// Smart Parking Management System — Prisma Schema
+// Normalized relational schema for PostgreSQL.
+// ─────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ────────────────────────────── Enums ──────────────────────────────────
+
+enum Role {
+  DRIVER
+  OPERATOR
+  ADMIN
+}
+
+enum VehicleType {
+  TWO_WHEELER
+  THREE_WHEELER
+  FOUR_WHEELER
+}
+
+enum LotStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum SpaceStatus {
+  AVAILABLE
+  RESERVED
+  OCCUPIED
+  MAINTENANCE
+}
+
+enum BookingStatus {
+  PENDING // created, awaiting payment
+  CONFIRMED // paid, not yet checked in
+  ACTIVE // checked in, vehicle parked
+  COMPLETED // checked out
+  CANCELLED // cancelled by driver/operator before check-in
+  EXPIRED // payment/hold window lapsed
+  NO_SHOW // confirmed but never checked in before window elapsed
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum QrStatus {
+  ACTIVE
+  CHECKED_IN
+  USED
+  EXPIRED
+  INVALID
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  PAYMENT_CONFIRMATION
+  BOOKING_REMINDER
+  BOOKING_EXPIRY
+  CHECK_IN
+  CHECK_OUT
+  REFUND_CONFIRMATION
+  OPERATOR_ALERT
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ────────────────────────────── Identity ───────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  phone           String?   @unique
+  passwordHash    String
+  role            Role      @default(DRIVER)
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  isActive        Boolean   @default(true)
+  isEmailVerified Boolean   @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  driverProfile   DriverProfile?
+  operatorProfile OperatorProfile?
+  adminProfile    AdminProfile?
+
+  sessions      Session[]
+  notifications Notification[]
+
+  @@index([role])
+  @@map("users")
+}
+
+/// Refresh-token backed sessions, one row per issued refresh token.
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  revokedAt        DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model DriverProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  licenseNumber String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vehicles Vehicle[]
+  bookings Booking[]
+  payments Payment[]
+
+  @@map("driver_profiles")
+}
+
+model OperatorProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName     String
+  businessLicense String?
+  isVerified      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  parkingLots ParkingLot[]
+
+  @@map("operator_profiles")
+}
+
+model AdminProfile {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department String?
+  createdAt  DateTime @default(now())
+
+  @@map("admin_profiles")
+}
+
+// ────────────────────────────── Vehicles ───────────────────────────────
+
+model Vehicle {
+  id          String        @id @default(cuid())
+  driverId    String
+  driver      DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  plateNumber String        @unique
+  type        VehicleType
+  make        String?
+  model       String?
+  color       String?
+  isDefault   Boolean       @default(false)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  bookings Booking[]
+
+  @@index([driverId])
+  @@index([type])
+  @@map("vehicles")
+}
+
+// ────────────────────────────── Parking ────────────────────────────────
+
+model ParkingLot {
+  id          String          @id @default(cuid())
+  operatorId  String
+  operator    OperatorProfile @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  addressLine String
+  city        String
+  state       String?
+  country     String
+  postalCode  String?
+  latitude    Float
+  longitude   Float
+  status      LotStatus       @default(ACTIVE)
+  openTime    String          @default("00:00")
+  closeTime   String          @default("23:59")
+  amenities   String[]        @default([])
+  images      String[]        @default([])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  zones          ParkingZone[]
+  spaces         ParkingSpace[]
+  pricingRules   PricingRule[]
+  bookings       Booking[]
+  analyticsDaily AnalyticsDaily[]
+
+  @@index([operatorId])
+  @@index([city])
+  @@index([latitude, longitude])
+  @@map("parking_lots")
+}
+
+model ParkingZone {
+  id          String      @id @default(cuid())
+  lotId       String
+  lot         ParkingLot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  name        String
+  vehicleType VehicleType
+  floor       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  spaces ParkingSpace[]
+
+  @@unique([lotId, name])
+  @@index([lotId, vehicleType])
+  @@map("parking_zones")
+}
+
+model ParkingSpace {
+  id          String      @id @default(cuid())
+  lotId       String
+  lot         ParkingLot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  zoneId      String
+  zone        ParkingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  code        String
+  vehicleType VehicleType
+  status      SpaceStatus @default(AVAILABLE)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  bookings Booking[]
+
+  @@unique([lotId, code])
+  @@index([lotId, vehicleType, status])
+  @@index([zoneId])
+  @@map("parking_spaces")
+}
+
+model PricingRule {
+  id                String      @id @default(cuid())
+  lotId             String
+  lot               ParkingLot  @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  vehicleType       VehicleType
+  name              String
+  baseRatePerHour   Decimal     @db.Decimal(10, 2)
+  dailyMaxRate      Decimal?    @db.Decimal(10, 2)
+  weekendMultiplier Decimal     @default(1.0) @db.Decimal(4, 2)
+  currency          String      @default("usd")
+  isActive          Boolean     @default(true)
+  effectiveFrom     DateTime    @default(now())
+  effectiveTo       DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  bookings Booking[]
+
+  @@index([lotId, vehicleType, isActive])
+  @@map("pricing_rules")
+}
+
+// ────────────────────────────── Bookings ───────────────────────────────
+
+model Booking {
+  id            String        @id @default(cuid())
+  bookingNumber String        @unique
+  driverId      String
+  driver        DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicleId     String
+  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id])
+  lotId         String
+  lot           ParkingLot    @relation(fields: [lotId], references: [id])
+  spaceId       String
+  space         ParkingSpace  @relation(fields: [spaceId], references: [id])
+  pricingRuleId String?
+  pricingRule   PricingRule?  @relation(fields: [pricingRuleId], references: [id])
+
+  startTime        DateTime
+  endTime          DateTime
+  actualCheckInAt  DateTime?
+  actualCheckOutAt DateTime?
+
+  status      BookingStatus @default(PENDING)
+  totalAmount Decimal       @db.Decimal(10, 2)
+  currency    String        @default("usd")
+
+  holdExpiresAt      DateTime?
+  reminderSentAt     DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payment Payment?
+  qrCode  QrCode?
+
+  @@index([driverId])
+  @@index([spaceId, startTime, endTime])
+  @@index([lotId, status])
+  @@index([status, holdExpiresAt])
+  @@map("bookings")
+}
+
+// ────────────────────────────── Payments ───────────────────────────────
+
+model Payment {
+  id        String        @id @default(cuid())
+  bookingId String        @unique
+  booking   Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  driverId  String
+  driver    DriverProfile @relation(fields: [driverId], references: [id])
+
+  invoiceNumber String        @unique
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("usd")
+  status        PaymentStatus @default(PENDING)
+
+  stripePaymentIntentId String? @unique
+  stripeClientSecret    String?
+  stripeChargeId        String?
+
+  refundedAmount Decimal   @default(0) @db.Decimal(10, 2)
+  paidAt         DateTime?
+  failureReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refunds Refund[]
+
+  @@index([status])
+  @@index([driverId])
+  @@map("payments")
+}
+
+model Refund {
+  id             String       @id @default(cuid())
+  paymentId      String
+  payment        Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  stripeRefundId String?      @unique
+  amount         Decimal      @db.Decimal(10, 2)
+  reason         String?
+  status         RefundStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+// ────────────────────────────── QR Codes ───────────────────────────────
+
+model QrCode {
+  id         String    @id @default(cuid())
+  bookingId  String    @unique
+  booking    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  code       String    @unique
+  status     QrStatus  @default(ACTIVE)
+  issuedAt   DateTime  @default(now())
+  expiresAt  DateTime
+  checkInAt  DateTime?
+  checkOutAt DateTime?
+  usedCount  Int       @default(0)
+
+  @@index([status])
+  @@map("qr_codes")
+}
+
+// ────────────────────────────── Notifications ──────────────────────────
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  channel   NotificationChannel @default(EMAIL)
+  status    NotificationStatus  @default(PENDING)
+  subject   String
+  content   String
+  metadata  Json?
+  sentAt    DateTime?
+  error     String?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("notifications")
+}
+
+// ────────────────────────────── Analytics ──────────────────────────────
+
+/// Precomputed daily rollups per lot, used to serve dashboards/analytics
+/// quickly without scanning the bookings/payments tables directly.
+model AnalyticsDaily {
+  id    String     @id @default(cuid())
+  lotId String
+  lot   ParkingLot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  date  DateTime   @db.Date
+
+  totalBookings        Int     @default(0)
+  completedBookings    Int     @default(0)
+  cancelledBookings    Int     @default(0)
+  totalRevenue         Decimal @default(0) @db.Decimal(12, 2)
+  totalRefunds         Decimal @default(0) @db.Decimal(12, 2)
+  occupiedSpaceHours   Decimal @default(0) @db.Decimal(12, 2)
+  avgOccupancyRate     Decimal @default(0) @db.Decimal(5, 2)
+  peakHour             Int?
+  newCustomers         Int     @default(0)
+  vehicleTypeBreakdown Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lotId, date])
+  @@index([date])
+  @@map("analytics_daily")
+}
