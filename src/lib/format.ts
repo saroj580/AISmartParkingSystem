@@ -1,26 +1,27 @@
 export function formatCurrency(
   amount: number,
-  currency = "USD",
+  currency = "INR",
   opts: Intl.NumberFormatOptions = {},
 ) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency,
-    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     ...opts,
   }).format(amount);
 }
 
+/** Compact en-IN notation — 2.5L, 1.5Cr — for chart axes and stat tiles. */
 export function formatCompact(n: number) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(n);
 }
 
 export function formatNumber(n: number) {
-  return new Intl.NumberFormat("en-US").format(n);
+  return new Intl.NumberFormat("en-IN").format(n);
 }
 
 export function formatDate(

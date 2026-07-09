@@ -1,24 +1,16 @@
-import Redis from "ioredis";
+import { Redis } from "@upstash/redis";
 import { env } from "@/lib/env";
-import { createModuleLogger } from "@/lib/logger";
-
-const log = createModuleLogger("redis");
 
 const globalForRedis = globalThis as unknown as { __redis?: Redis };
 
 function createRedisClient(): Redis {
-  const client = new Redis(env.REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    retryStrategy(times) {
-      return Math.min(times * 200, 2000);
-    },
-    lazyConnect: false,
+  return new Redis({
+    url: env.UPSTASH_REDIS_REST_URL,
+    token: env.UPSTASH_REDIS_REST_TOKEN,
+    // Keep raw strings so existing JSON.parse/stringify call-sites behave
+    // exactly as they did with ioredis.
+    automaticDeserialization: false,
   });
-
-  client.on("error", (err) => log.error({ err }, "Redis connection error"));
-  client.on("connect", () => log.info("Redis connected"));
-
-  return client;
 }
 
 export const redis = globalForRedis.__redis ?? createRedisClient();
@@ -45,7 +37,7 @@ export async function cacheGetOrSet<T>(
   ttlSeconds: number,
   fetcher: () => Promise<T>
 ): Promise<T> {
-  const cached = await redis.get(key);
+  const cached = await redis.get<string>(key);
   if (cached) {
     try {
       return JSON.parse(cached) as T;
@@ -55,23 +47,21 @@ export async function cacheGetOrSet<T>(
   }
 
   const fresh = await fetcher();
-  await redis.set(key, JSON.stringify(fresh), "EX", ttlSeconds);
+  await redis.set(key, JSON.stringify(fresh), { ex: ttlSeconds });
   return fresh;
 }
 
 export async function invalidateCache(pattern: string): Promise<void> {
-  const stream = redis.scanStream({ match: pattern, count: 100 });
-  const pipeline = redis.pipeline();
-  let found = false;
+  let cursor = "0";
+  const keysToDelete: string[] = [];
 
-  for await (const keys of stream) {
-    if (keys.length) {
-      found = true;
-      keys.forEach((key: string) => pipeline.del(key));
-    }
-  }
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor, { match: pattern, count: 100 });
+    cursor = nextCursor;
+    keysToDelete.push(...keys);
+  } while (cursor !== "0");
 
-  if (found) {
-    await pipeline.exec();
+  if (keysToDelete.length) {
+    await redis.del(...keysToDelete);
   }
 }

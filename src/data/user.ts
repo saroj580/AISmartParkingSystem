@@ -12,7 +12,7 @@ export const CURRENT_DRIVER = {
   stats: {
     totalBookings: 47,
     hoursParked: 312,
-    totalSpent: 1284.5,
+    totalSpent: 25680,
     co2SavedKg: 41,
   },
 };

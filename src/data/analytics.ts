@@ -6,20 +6,21 @@ const MONTH_LABELS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+// Revenue series are in INR.
 export const REVENUE_WEEKLY: TimePoint[] = [
-  { label: "Mon", value: 3120, secondary: 2840 },
-  { label: "Tue", value: 3480, secondary: 3020 },
-  { label: "Wed", value: 3960, secondary: 3340 },
-  { label: "Thu", value: 3710, secondary: 3560 },
-  { label: "Fri", value: 4820, secondary: 3980 },
-  { label: "Sat", value: 5640, secondary: 4210 },
-  { label: "Sun", value: 4390, secondary: 3890 },
+  { label: "Mon", value: 249600, secondary: 227200 },
+  { label: "Tue", value: 278400, secondary: 241600 },
+  { label: "Wed", value: 316800, secondary: 267200 },
+  { label: "Thu", value: 296800, secondary: 284800 },
+  { label: "Fri", value: 385600, secondary: 318400 },
+  { label: "Sat", value: 451200, secondary: 336800 },
+  { label: "Sun", value: 351200, secondary: 311200 },
 ];
 
 export const REVENUE_MONTHLY: TimePoint[] = MONTH_LABELS.map((label, i) => ({
   label,
-  value: Math.round(58000 + i * 4200 + Math.sin(i / 2) * 6000),
-  secondary: Math.round(46000 + i * 3400 + Math.cos(i / 2) * 4000),
+  value: Math.round(4640000 + i * 336000 + Math.sin(i / 2) * 480000),
+  secondary: Math.round(3680000 + i * 272000 + Math.cos(i / 2) * 320000),
 }));
 
 const BOOKINGS_VALUES = [312, 348, 366, 340, 428, 512, 402];
@@ -59,7 +60,7 @@ export const LOT_UTILIZATION = [
 export const PLATFORM_GROWTH: TimePoint[] = MONTH_LABELS.slice(0, 9).map(
   (label, i) => ({
     label,
-    value: Math.round(4200 + i * 680 + Math.sin(i) * 320),
-    secondary: Math.round(180 + i * 24),
+    value: Math.round(336000 + i * 54400 + Math.sin(i) * 25600),
+    secondary: Math.round(14400 + i * 1920),
   }),
 );

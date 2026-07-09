@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["ioredis", "@prisma/client", "pino"],
+  serverExternalPackages: ["@prisma/client", "pino"],
   eslint: {
     ignoreDuringBuilds: false,
   },

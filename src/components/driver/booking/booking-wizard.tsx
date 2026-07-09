@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -9,9 +9,10 @@ import { StepIndicator, type WizardStep } from "@/components/driver/booking/step
 import { VehicleStep } from "@/components/driver/booking/vehicle-step";
 import { LotStep } from "@/components/driver/booking/lot-step";
 import { DateStep, TimeStep } from "@/components/driver/booking/date-time-step";
-import { PaymentStep, type PaymentFormValues } from "@/components/driver/booking/payment-step";
+import { PaymentStep } from "@/components/driver/booking/payment-step";
 import { BookingSummary, computeTotal } from "@/components/driver/booking/booking-summary";
 import { ConfirmationStep } from "@/components/driver/booking/confirmation-step";
+import { formatCurrency } from "@/lib/format";
 import type { ParkingLot, Vehicle, VehicleType } from "@/types/domain";
 import { toast } from "sonner";
 
@@ -47,7 +48,6 @@ export function BookingWizard({
   const [paymentValid, setPaymentValid] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [bookingNumber] = useState(generateBookingNumber);
-  const submitPaymentRef = useRef<(() => void) | null>(null);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
   const total = useMemo(
@@ -65,9 +65,9 @@ export function BookingWizard({
 
   function handleContinue() {
     if (stepIndex === STEPS.length - 1) {
-      submitPaymentRef.current?.();
-      if (!paymentValid) return;
-      toast.success("Payment successful");
+      // No payment gateway in this environment — bookings are hardcoded as
+      // paid the moment they're confirmed.
+      toast.success("Booking confirmed — marked as paid");
       setConfirmed(true);
       return;
     }
@@ -96,13 +96,6 @@ export function BookingWizard({
       />
     );
   }
-
-  const defaultPayment: PaymentFormValues = {
-    cardName: "Ava Chen",
-    cardNumber: "4242 4242 4242 4242",
-    expiry: "12/28",
-    cvc: "123",
-  };
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -147,9 +140,8 @@ export function BookingWizard({
               )}
               {stepIndex === 4 && (
                 <PaymentStep
-                  defaultValues={defaultPayment}
+                  totalLabel={formatCurrency(total)}
                   onValidChange={setPaymentValid}
-                  onSubmitRef={submitPaymentRef}
                 />
               )}
             </motion.div>
@@ -161,7 +153,7 @@ export function BookingWizard({
               Back
             </Button>
             <Button onClick={handleContinue} disabled={!canContinue}>
-              {stepIndex === STEPS.length - 1 ? "Confirm & pay" : "Continue"}
+              {stepIndex === STEPS.length - 1 ? "Confirm booking" : "Continue"}
               <ArrowRight className="size-4" />
             </Button>
           </div>

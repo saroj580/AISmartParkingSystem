@@ -2,7 +2,7 @@ import type { VehicleType } from "@prisma/client";
 import { parkingLotsRepository } from "@/modules/parking-lots/parking-lots.repository";
 import { parkingSpacesService } from "@/modules/parking-spaces/parking-spaces.service";
 import type { CreateLotInput, UpdateLotInput } from "@/modules/parking-lots/parking-lots.validators";
-import { geocodeAddress, haversineDistanceKm, boundingBoxForRadius } from "@/lib/googleMaps";
+import { geocodeAddress, haversineDistanceKm, boundingBoxForRadius } from "@/lib/maps";
 import { ForbiddenError, NotFoundError, BadRequestError } from "@/errors/AppError";
 import { cacheGetOrSet, CacheKeys } from "@/lib/redis";
 import { CACHE_TTL_SECONDS } from "@/constants/config";

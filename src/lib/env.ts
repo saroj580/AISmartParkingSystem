@@ -8,7 +8,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   DIRECT_URL: z.string().optional(),
 
-  REDIS_URL: z.string().min(1, "REDIS_URL is required"),
+  UPSTASH_REDIS_REST_URL: z.string().url("UPSTASH_REDIS_REST_URL must be a valid URL"),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required"),
 
   JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET must be at least 16 characters"),
   JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET must be at least 16 characters"),
@@ -18,7 +19,7 @@ const envSchema = z.object({
 
   STRIPE_SECRET_KEY: z.string().min(1, "STRIPE_SECRET_KEY is required"),
   STRIPE_WEBHOOK_SECRET: z.string().min(1, "STRIPE_WEBHOOK_SECRET is required"),
-  STRIPE_CURRENCY: z.string().default("usd"),
+  STRIPE_CURRENCY: z.string().default("inr"),
 
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(""),
   CLOUDINARY_API_KEY: z.string().optional().default(""),
@@ -27,7 +28,6 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional().default(""),
   RESEND_FROM_EMAIL: z.string().default("Smart Parking <no-reply@smartparking.com>"),
 
-  GOOGLE_MAPS_API_KEY: z.string().optional().default(""),
 
   QR_CODE_SECRET: z.string().min(16, "QR_CODE_SECRET must be at least 16 characters"),
 

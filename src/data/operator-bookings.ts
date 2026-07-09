@@ -39,7 +39,7 @@ function generate(): Booking[] {
     const dayOffset = -Math.floor(rand() * 20) * D;
     const hourOffset = Math.floor(rand() * 20) * H;
     const durationH = 1 + Math.floor(rand() * 6);
-    const rate = vehicleType === "FOUR_WHEELER" ? 4 : vehicleType === "TWO_WHEELER" ? 1.5 : 2.5;
+    const rate = vehicleType === "FOUR_WHEELER" ? 80 : vehicleType === "TWO_WHEELER" ? 30 : 50;
     const amount = Math.round(rate * durationH * 100) / 100;
 
     bookings.push({
@@ -59,7 +59,7 @@ function generate(): Booking[] {
       actualCheckOutAt: status === "COMPLETED" ? iso(dayOffset + hourOffset + durationH * H) : null,
       status,
       totalAmount: amount,
-      currency: "USD",
+      currency: "INR",
       createdAt: iso(dayOffset + hourOffset - H),
       qrStatus: status === "COMPLETED" ? "USED" : status === "ACTIVE" ? "CHECKED_IN" : status === "CANCELLED" || status === "NO_SHOW" ? "INVALID" : "ACTIVE",
       qrToken: `QR-${i}`,

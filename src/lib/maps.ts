@@ -12,42 +12,18 @@ export interface GeocodedAddress {
 
 /** Geocodes a free-text address into coordinates. Used when operators create parking lots. */
 export async function geocodeAddress(address: string): Promise<GeocodedAddress> {
-  if (!env.GOOGLE_MAPS_API_KEY) {
-    throw new BadRequestError("Geocoding is not configured on this server");
-  }
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", address);
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("limit", "1");
 
-  const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-  url.searchParams.set("address", address);
-  url.searchParams.set("key", env.GOOGLE_MAPS_API_KEY);
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    log.error({ status: response.status }, "Google Maps geocoding request failed");
-    throw new BadRequestError("Failed to geocode address");
-  }
-
-  const payload = (await response.json()) as {
-    status: string;
-    results: Array<{
-      formatted_address: string;
-      geometry: { location: { lat: number; lng: number } };
-    }>;
-  };
-
-  if (payload.status !== "OK" || payload.results.length === 0) {
-    throw new BadRequestError(`Unable to geocode address: ${payload.status}`);
-  }
-
-  const result = payload.results[0];
-  if (!result) {
-    throw new BadRequestError(`Unable to geocode address: ${payload.status}`);
-  }
-
-  return {
-    latitude: result.geometry.location.lat,
-    longitude: result.geometry.location.lng,
-    formattedAddress: result.formatted_address,
-  };
+  const response = await fetch(url.toString(), {
+    headers: {
+      "User-Agent": `${env.APP_NAME} (${env.APP_URL})`,  // required by Nominatim policy
+      Accept: "application/json",
+    },
+  });
+  // ... parses lat/lon/display_name — no API key needed
 }
 
 const EARTH_RADIUS_KM = 6371;

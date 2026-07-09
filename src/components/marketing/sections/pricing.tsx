@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 const PLANS = [
   {
     name: "Starter",
-    price: "$0",
+    price: "₹0",
     period: "/mo",
     description: "For single-lot operators getting started.",
     features: [
@@ -21,7 +21,7 @@ const PLANS = [
   },
   {
     name: "Growth",
-    price: "$249",
+    price: "₹19,999",
     period: "/mo",
     description: "For multi-lot operators scaling across a city.",
     features: [
