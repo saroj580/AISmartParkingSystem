@@ -12,6 +12,7 @@ import {
 import { OPERATORS } from "@/data/customers";
 import { PLATFORM_GROWTH, VEHICLE_DISTRIBUTION } from "@/data/analytics";
 import { PARKING_LOTS } from "@/data/lots";
+import { formatCurrency, formatCompact } from "@/lib/format";
 
 export default function AdminAnalyticsPage() {
   const totalRevenue = OPERATORS.reduce((s, o) => s + o.revenue, 0);
@@ -32,7 +33,7 @@ export default function AdminAnalyticsPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
           label="Platform revenue"
-          value={`$${(totalRevenue / 1000).toFixed(0)}K`}
+          value={`₹${formatCompact(totalRevenue)}`}
           delta={16.2}
           icon={<Wallet />}
           trend={[30, 36, 34, 44, 48, 52, 60]}
@@ -115,7 +116,7 @@ export default function AdminAnalyticsPage() {
                   <TableCell className="tabular-nums">{o.lots}</TableCell>
                   <TableCell className="tabular-nums">{o.spaces}</TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
-                    ${o.revenue.toLocaleString()}
+                    {formatCurrency(o.revenue)}
                   </TableCell>
                 </TableRow>
               ))}

@@ -77,7 +77,13 @@ export const qrService = {
       })
       .catch(() => undefined);
 
-    return booking;
+    return {
+      ...booking,
+      driverName: `${user.firstName} ${user.lastName}`,
+      driverEmail: user.email,
+      lotName: qr.booking.lot.name,
+      vehiclePlate: qr.booking.vehicle.plateNumber,
+    };
   },
 
   async checkOut(userId: string, role: Role, code: string) {
@@ -106,6 +112,12 @@ export const qrService = {
       })
       .catch(() => undefined);
 
-    return booking;
+    return {
+      ...booking,
+      driverName: `${user.firstName} ${user.lastName}`,
+      driverEmail: user.email,
+      lotName: qr.booking.lot.name,
+      vehiclePlate: qr.booking.vehicle.plateNumber,
+    };
   },
 };

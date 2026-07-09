@@ -6,7 +6,7 @@ const TESTIMONIALS = [
   {
     quote:
       "We cut check-in time from four minutes to under fifteen seconds. Attendants scan, the barrier lifts, done. Our weekend abuse complaints dropped to almost zero.",
-    name: "Marcus Reed",
+    name: "Rohan Mehta",
     role: "General Manager, UrbanPark Holdings",
     color: "#2a78d6",
   },
@@ -19,9 +19,9 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "I book my SFO long-stay from the departures lounge now. The QR pass on my phone is the only thing I need — no more hunting for a paper ticket.",
-    name: "Ava Chen",
-    role: "Frequent driver, San Francisco",
+      "I book my CSMIA long-stay from the departures lounge now. The QR pass on my phone is the only thing I need — no more hunting for a paper ticket.",
+    name: "Ananya Chetan",
+    role: "Frequent driver, Mumbai",
     color: "#e87ba4",
   },
 ];

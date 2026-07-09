@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { VehicleTypeBadge } from "@/components/shared/vehicle-type-badge";
 import { CUSTOMERS } from "@/data/customers";
-import { initials } from "@/lib/format";
+import { formatCurrency, initials } from "@/lib/format";
 
 const STATUS_VARIANT = {
   active: "available",
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
                 </div>
               </TableCell>
               <TableCell className="tabular-nums">{c.bookings}</TableCell>
-              <TableCell className="font-medium tabular-nums">${c.totalSpend.toFixed(2)}</TableCell>
+              <TableCell className="font-medium tabular-nums">{formatCurrency(c.totalSpend)}</TableCell>
               <TableCell className="text-muted-foreground">{c.lastActive}</TableCell>
               <TableCell>
                 <Badge variant={STATUS_VARIANT[c.status]} dot size="sm">

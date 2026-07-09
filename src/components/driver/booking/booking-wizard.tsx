@@ -12,6 +12,7 @@ import { DateStep, TimeStep } from "@/components/driver/booking/date-time-step";
 import { PaymentStep } from "@/components/driver/booking/payment-step";
 import { BookingSummary, computeTotal } from "@/components/driver/booking/booking-summary";
 import { ConfirmationStep } from "@/components/driver/booking/confirmation-step";
+import { createDriverBooking } from "@/app/driver/book/[id]/actions";
 import { formatCurrency } from "@/lib/format";
 import type { ParkingLot, Vehicle, VehicleType } from "@/types/domain";
 import { toast } from "sonner";
@@ -24,21 +25,15 @@ const STEPS: WizardStep[] = [
   { key: "payment", label: "Payment" },
 ];
 
-function generateBookingNumber() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
-  let out = "";
-  for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return `PK-${out}`;
-}
-
 export function BookingWizard({
   lot,
-  vehicles,
+  vehicles: initialVehicles,
 }: {
   lot: ParkingLot;
   vehicles: Vehicle[];
 }) {
   const router = useRouter();
+  const [vehicles, setVehicles] = useState(initialVehicles);
   const [stepIndex, setStepIndex] = useState(0);
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
@@ -47,13 +42,15 @@ export function BookingWizard({
   const [duration, setDuration] = useState<number | null>(null);
   const [paymentValid, setPaymentValid] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [bookingNumber] = useState(generateBookingNumber);
+  const [submitting, setSubmitting] = useState(false);
+  const [booked, setBooked] = useState<{ bookingNumber: string; totalAmount: number } | null>(null);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
-  const total = useMemo(
+  const estimatedTotal = useMemo(
     () => computeTotal(lot, vehicleType, duration),
     [lot, vehicleType, duration],
   );
+  const total = booked?.totalAmount ?? estimatedTotal;
 
   const canContinue = [
     !!vehicleType && !!vehicleId,
@@ -63,11 +60,31 @@ export function BookingWizard({
     paymentValid,
   ][stepIndex];
 
-  function handleContinue() {
+  async function handleContinue() {
     if (stepIndex === STEPS.length - 1) {
-      // No payment gateway in this environment — bookings are hardcoded as
-      // paid the moment they're confirmed.
+      if (!vehicleType || !vehicleId || !date || startHour === null || !duration) return;
+
+      setSubmitting(true);
+      const startTime = new Date(date);
+      startTime.setHours(startHour, 0, 0, 0);
+      const endTime = new Date(startTime.getTime() + duration * 3_600_000);
+
+      const result = await createDriverBooking({
+        lotId: lot.id,
+        vehicleType,
+        vehicleId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+      });
+      setSubmitting(false);
+
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
       toast.success("Booking confirmed — marked as paid");
+      setBooked({ bookingNumber: result.booking.bookingNumber, totalAmount: result.booking.totalAmount });
       setConfirmed(true);
       return;
     }
@@ -82,7 +99,7 @@ export function BookingWizard({
     setStepIndex((i) => Math.max(i - 1, 0));
   }
 
-  if (confirmed && vehicleType && vehicle && date && startHour !== null && duration) {
+  if (confirmed && booked && vehicleType && vehicle && date && startHour !== null && duration) {
     return (
       <ConfirmationStep
         lot={lot}
@@ -92,7 +109,7 @@ export function BookingWizard({
         startHour={startHour}
         duration={duration}
         total={total}
-        bookingNumber={bookingNumber}
+        bookingNumber={booked.bookingNumber}
       />
     );
   }
@@ -122,6 +139,7 @@ export function BookingWizard({
                     setVehicleId(null);
                   }}
                   onSelectVehicle={setVehicleId}
+                  onVehicleAdded={(v) => setVehicles((prev) => [...prev, v])}
                 />
               )}
               {stepIndex === 1 && <LotStep lot={lot} />}
@@ -152,8 +170,12 @@ export function BookingWizard({
               <ArrowLeft className="size-4" />
               Back
             </Button>
-            <Button onClick={handleContinue} disabled={!canContinue}>
-              {stepIndex === STEPS.length - 1 ? "Confirm booking" : "Continue"}
+            <Button onClick={handleContinue} disabled={!canContinue || submitting}>
+              {stepIndex === STEPS.length - 1
+                ? submitting
+                  ? "Confirming…"
+                  : "Confirm booking"
+                : "Continue"}
               <ArrowRight className="size-4" />
             </Button>
           </div>

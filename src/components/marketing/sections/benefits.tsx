@@ -36,7 +36,7 @@ export function Benefits() {
               ))}
             </ul>
             <Button variant="secondary" className="mt-8 w-fit" asChild>
-              <Link href="/driver">Explore the driver app</Link>
+              <Link href="/register?role=DRIVER">Explore the driver app</Link>
             </Button>
           </div>
         </Reveal>
@@ -62,7 +62,7 @@ export function Benefits() {
               className="mt-8 w-fit bg-background text-foreground hover:bg-background/90"
               asChild
             >
-              <Link href="/operator">Explore the operator dashboard</Link>
+              <Link href="/register?role=OPERATOR">Explore the operator dashboard</Link>
             </Button>
           </div>
         </Reveal>

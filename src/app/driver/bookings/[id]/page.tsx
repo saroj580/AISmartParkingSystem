@@ -2,15 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Car, Calendar, Receipt } from "lucide-react";
 import { QrPreview } from "@/components/ui/qr-preview";
-import { Button } from "@/components/ui/button";
 import { BookingStatusBadge, QrStatusBadge } from "@/components/shared/status-badge";
 import { VehicleTypeBadge } from "@/components/shared/vehicle-type-badge";
-import { DRIVER_BOOKINGS, getBooking } from "@/data/bookings";
-import { formatDateTime, formatDuration } from "@/lib/format";
-
-export function generateStaticParams() {
-  return DRIVER_BOOKINGS.map((b) => ({ id: b.id }));
-}
+import { CancelBookingButton } from "@/components/driver/cancel-booking-button";
+import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/session";
+import { getDriverBooking } from "@/server/views/bookings";
+import { formatCurrency, formatDateTime, formatDuration } from "@/lib/format";
 
 export default async function BookingDetailPage({
   params,
@@ -18,7 +16,9 @@ export default async function BookingDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const booking = getBooking(id);
+  const session = await getSessionUser();
+  const driverProfile = await prisma.driverProfile.findUniqueOrThrow({ where: { userId: session!.id } });
+  const booking = await getDriverBooking(driverProfile.id, id);
   if (!booking) notFound();
 
   const durationMin = Math.round(
@@ -87,7 +87,10 @@ export default async function BookingDetailPage({
         <DetailCard
           icon={<Receipt className="size-4" />}
           label="Payment"
-          lines={[`$${booking.totalAmount.toFixed(2)} ${booking.currency.toUpperCase()}`, "Paid via Visa •••• 4242"]}
+          lines={[
+            formatCurrency(booking.totalAmount, booking.currency.toUpperCase()),
+            booking.status === "PENDING" ? "Awaiting payment" : "Paid",
+          ]}
         />
       </div>
 
@@ -106,11 +109,7 @@ export default async function BookingDetailPage({
         </div>
       )}
 
-      {canCancel && (
-        <Button variant="destructive" className="w-fit">
-          Cancel booking
-        </Button>
-      )}
+      {canCancel && <CancelBookingButton bookingId={booking.id} />}
     </div>
   );
 }

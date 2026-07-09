@@ -9,7 +9,7 @@ export const qrRepository = {
   findByCode(code: string) {
     return prisma.qrCode.findUnique({
       where: { code },
-      include: { booking: { include: { lot: true, space: true, driver: { include: { user: true } } } } },
+      include: { booking: { include: { lot: true, space: true, vehicle: true, driver: { include: { user: true } } } } },
     });
   },
 

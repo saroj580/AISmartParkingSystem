@@ -1,19 +1,25 @@
-"use client";
-
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SimpleBarChart } from "@/components/charts/bar-chart";
-import { RevenueAreaChart } from "@/components/charts/revenue-area-chart";
+import { PercentBarChart } from "@/components/charts/percent-bar-chart";
 import { DonutChart } from "@/components/charts/donut-chart";
-import {
-  PEAK_HOURS, OCCUPANCY_TREND, VEHICLE_DISTRIBUTION, LOT_UTILIZATION, BOOKINGS_DAILY,
-} from "@/data/analytics";
+import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/session";
+import { getOperatorAnalytics } from "@/server/views/operator-analytics";
+import { listLotsForOperator } from "@/server/views/parking-lots";
+import { occupancyPct } from "@/data/lots";
 
-export default function OperatorAnalyticsPage() {
-  const utilizationData = LOT_UTILIZATION.map((l) => ({
-    label: l.name.replace(/(SmartDeck|Central|Yard|North|Pier 3)/, "").trim().split(" ")[0] ?? l.name,
-    value: l.value,
-  }));
+export default async function OperatorAnalyticsPage() {
+  const session = await getSessionUser();
+  const operatorProfile = await prisma.operatorProfile.findUniqueOrThrow({ where: { userId: session!.id } });
+
+  const [analytics, lots] = await Promise.all([
+    getOperatorAnalytics(operatorProfile.id),
+    listLotsForOperator(operatorProfile.id),
+  ]);
+
+  const utilizationData = lots.map((l) => ({ label: l.name.split(" ")[0] ?? l.name, value: occupancyPct(l) }));
+  const totalVehicleBookings = analytics.vehicleDistribution.reduce((s, d) => s + d.value, 0);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -23,35 +29,20 @@ export default function OperatorAnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Peak hours</CardTitle>
-            <CardDescription>Average concurrent check-ins by hour</CardDescription>
+            <CardDescription>Check-ins by hour of day, all time</CardDescription>
           </CardHeader>
           <CardContent>
-            <SimpleBarChart data={PEAK_HOURS} label="Check-ins" colorIndex={0} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Occupancy over the day</CardTitle>
-            <CardDescription>Percent of total capacity in use</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RevenueAreaChart
-              data={OCCUPANCY_TREND}
-              valuePrefix=""
-              primaryLabel="Occupancy"
-              secondaryLabel="Yesterday"
-            />
+            <SimpleBarChart data={analytics.peakHours} label="Check-ins" colorIndex={0} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Bookings this week</CardTitle>
-            <CardDescription>Daily completed reservations</CardDescription>
+            <CardDescription>Daily bookings created, last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <SimpleBarChart data={BOOKINGS_DAILY} label="Bookings" colorIndex={2} />
+            <SimpleBarChart data={analytics.bookingsDaily} label="Bookings" colorIndex={2} />
           </CardContent>
         </Card>
 
@@ -61,17 +52,17 @@ export default function OperatorAnalyticsPage() {
             <CardDescription>Share of bookings by vehicle type</CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center">
-            <DonutChart data={VEHICLE_DISTRIBUTION} centerLabel="Bookings" centerValue={VEHICLE_DISTRIBUTION.reduce((s, d) => s + d.value, 0).toString()} />
+            <DonutChart data={analytics.vehicleDistribution} centerLabel="Bookings" centerValue={totalVehicleBookings.toString()} />
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <CardTitle>Utilization by lot</CardTitle>
-            <CardDescription>Percent of capacity in use, current period</CardDescription>
+            <CardDescription>Percent of capacity in use, current</CardDescription>
           </CardHeader>
           <CardContent>
-            <SimpleBarChart data={utilizationData} label="Utilization" valueFormatter={(v) => `${v}%`} colorIndex={3} />
+            <PercentBarChart data={utilizationData} label="Utilization" colorIndex={3} />
           </CardContent>
         </Card>
       </div>

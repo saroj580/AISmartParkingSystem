@@ -1,5 +1,6 @@
 import { VEHICLE_META } from "@/constants/vehicles";
 import type { ParkingLot, Vehicle, VehicleType } from "@/types/domain";
+import { formatCurrency } from "@/lib/format";
 
 export function BookingSummary({
   lot,
@@ -72,12 +73,12 @@ export function BookingSummary({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
-        <Row label={`Rate (${rate.toFixed(2)}/hr)`} value={`$${rawTotal.toFixed(2)}`} muted />
-        <Row label="Service fee" value={`$${serviceFee.toFixed(2)}`} muted />
+        <Row label={`Rate (${formatCurrency(rate)}/hr)`} value={formatCurrency(rawTotal)} muted />
+        <Row label="Service fee" value={formatCurrency(serviceFee)} muted />
         <div className="flex items-center justify-between border-t border-border pt-2.5">
           <span className="font-semibold">Total</span>
           <span className="font-display text-lg font-semibold">
-            ${total.toFixed(2)}
+            {formatCurrency(total)}
           </span>
         </div>
       </div>

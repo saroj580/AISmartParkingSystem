@@ -18,7 +18,7 @@ export function RevenueAreaChart({
   data,
   primaryLabel = "This period",
   secondaryLabel = "Previous period",
-  valuePrefix = "$",
+  valuePrefix = "₹",
 }: {
   data: TimePoint[];
   primaryLabel?: string;

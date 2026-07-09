@@ -33,9 +33,10 @@ export default function AdminSettingsPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Default currency</Label>
-            <Select defaultValue="USD">
+            <Select defaultValue="INR">
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="INR">INR — Indian Rupee</SelectItem>
                 <SelectItem value="USD">USD — US Dollar</SelectItem>
                 <SelectItem value="EUR">EUR — Euro</SelectItem>
                 <SelectItem value="GBP">GBP — British Pound</SelectItem>

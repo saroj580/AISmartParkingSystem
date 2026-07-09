@@ -13,7 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { OPERATORS } from "@/data/customers";
-import { initials, formatDate } from "@/lib/format";
+import { initials, formatDate, formatCurrency } from "@/lib/format";
 
 const STATUS_VARIANT = {
   active: "available",
@@ -82,7 +82,7 @@ export default function AdminOperatorsPage() {
               <TableCell className="text-muted-foreground">{o.city}</TableCell>
               <TableCell className="tabular-nums">{o.lots}</TableCell>
               <TableCell className="tabular-nums">{o.spaces}</TableCell>
-              <TableCell className="font-medium tabular-nums">${o.revenue.toLocaleString()}</TableCell>
+              <TableCell className="font-medium tabular-nums">{formatCurrency(o.revenue)}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(o.joinedAt)}</TableCell>
               <TableCell>
                 <Badge variant={STATUS_VARIANT[o.status]} dot size="sm">

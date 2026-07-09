@@ -93,7 +93,7 @@ export const bookingsService = {
 
         return created;
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 }
     );
 
     await invalidateCache(`cache:availability:${booking.lotId}:*`);

@@ -29,7 +29,7 @@ export function Cta() {
                 className="bg-background text-foreground hover:bg-background/90"
                 asChild
               >
-                <Link href="/driver">
+                <Link href="/register?role=DRIVER">
                   Get started free
                   <ArrowRight className="size-4" />
                 </Link>
@@ -40,7 +40,7 @@ export function Cta() {
                 className="text-brand-foreground hover:bg-white/10 hover:text-brand-foreground"
                 asChild
               >
-                <Link href="/operator">List your lot</Link>
+                <Link href="/register?role=OPERATOR">List your lot</Link>
               </Button>
             </div>
           </div>

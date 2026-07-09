@@ -56,15 +56,15 @@ async function main() {
   const lot = await prisma.parkingLot.create({
     data: {
       operatorId: operatorProfile.id,
-      name: "Downtown Central Parking",
-      description: "24/7 secure parking in the heart of downtown",
-      addressLine: "100 Main Street",
-      city: "Metropolis",
-      state: "NY",
-      country: "USA",
-      postalCode: "10001",
-      latitude: 40.7128,
-      longitude: -74.006,
+      name: "MG Road Central Parking",
+      description: "24/7 secure parking in the heart of Bengaluru's business district",
+      addressLine: "100 MG Road",
+      city: "Bengaluru",
+      state: "Karnataka",
+      country: "India",
+      postalCode: "560001",
+      latitude: 12.9758,
+      longitude: 77.6045,
       amenities: ["CCTV", "Covered", "EV Charging"],
     },
   });
@@ -99,9 +99,9 @@ async function main() {
   ]);
 
   await prisma.vehicle.upsert({
-    where: { plateNumber: "ABC-1234" },
+    where: { plateNumber: "KA01AB1234" },
     update: {},
-    create: { driverId: driverProfile.id, plateNumber: "ABC-1234", type: "FOUR_WHEELER", make: "Toyota", model: "Camry", isDefault: true },
+    create: { driverId: driverProfile.id, plateNumber: "KA01AB1234", type: "FOUR_WHEELER", make: "Maruti Suzuki", model: "Swift", isDefault: true },
   });
 
   console.log("Seed complete:");

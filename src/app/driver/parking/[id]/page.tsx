@@ -12,12 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LotStatusBadge } from "@/components/shared/status-badge";
 import { VEHICLE_META, VEHICLE_TYPES, availabilityLevel } from "@/constants/vehicles";
-import { PARKING_LOTS, getLot } from "@/data/lots";
+import { getParkingLotDetail } from "@/server/views/parking-lots";
+import { LotMap } from "@/components/shared/lot-map";
 import { cn } from "@/lib/cn";
-
-export function generateStaticParams() {
-  return PARKING_LOTS.map((lot) => ({ id: lot.id }));
-}
+import { formatCurrency } from "@/lib/format";
 
 const LEVEL_TEXT = {
   available: "text-available",
@@ -31,7 +29,7 @@ export default async function ParkingLotDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const lot = getLot(id);
+  const lot = await getParkingLotDetail(id);
   if (!lot) notFound();
 
   return (
@@ -123,16 +121,13 @@ export default async function ParkingLotDetailsPage({
 
           <section>
             <h2 className="text-[15px] font-semibold">Location</h2>
-            <div className="bg-grid mt-3 flex h-56 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-surface-muted">
-              <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <span className="flex size-10 items-center justify-center rounded-full bg-brand text-brand-foreground shadow-md">
-                  <MapPin className="size-5" />
-                </span>
-                <p className="text-xs">
-                  {lot.latitude.toFixed(4)}, {lot.longitude.toFixed(4)}
-                </p>
-              </div>
-            </div>
+            <LotMap
+              latitude={lot.latitude}
+              longitude={lot.longitude}
+              name={lot.name}
+              address={`${lot.addressLine}, ${lot.city}`}
+              className="mt-3"
+            />
           </section>
         </div>
 
@@ -174,8 +169,8 @@ export default async function ParkingLotDetailsPage({
                   />
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>${pricing.baseRatePerHour.toFixed(2)}/hr</span>
-                  <span>${pricing.dailyMaxRate.toFixed(2)} daily max</span>
+                  <span>{formatCurrency(pricing.baseRatePerHour)}/hr</span>
+                  <span>{formatCurrency(pricing.dailyMaxRate)} daily max</span>
                 </div>
               </div>
             );

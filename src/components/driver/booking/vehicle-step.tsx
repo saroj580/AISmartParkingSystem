@@ -1,6 +1,15 @@
+"use client";
+
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { VEHICLE_META, VEHICLE_TYPES } from "@/constants/vehicles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { ParkingLot, Vehicle, VehicleType } from "@/types/domain";
 import { cn } from "@/lib/cn";
+import { formatCurrency } from "@/lib/format";
 
 export function VehicleStep({
   lot,
@@ -9,6 +18,7 @@ export function VehicleStep({
   vehicleId,
   onSelectType,
   onSelectVehicle,
+  onVehicleAdded,
 }: {
   lot: ParkingLot;
   vehicles: Vehicle[];
@@ -16,6 +26,7 @@ export function VehicleStep({
   vehicleId: string | null;
   onSelectType: (t: VehicleType) => void;
   onSelectVehicle: (id: string) => void;
+  onVehicleAdded: (vehicle: Vehicle) => void;
 }) {
   const matchingVehicles = vehicles.filter(
     (v) => v.type === vehicleType && v.isActive,
@@ -62,7 +73,7 @@ export function VehicleStep({
                   </p>
                 </div>
                 <p className="text-sm font-semibold text-brand">
-                  ${lot.pricing[type].baseRatePerHour.toFixed(2)}/hr
+                  {formatCurrency(lot.pricing[type].baseRatePerHour)}/hr
                 </p>
               </button>
             );
@@ -76,12 +87,7 @@ export function VehicleStep({
           <p className="mt-1 text-sm text-muted-foreground">
             Choose which {VEHICLE_META[vehicleType].label.toLowerCase()} you’re bringing.
           </p>
-          {matchingVehicles.length === 0 ? (
-            <div className="mt-4 rounded-[var(--radius-lg)] border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              You don’t have a {VEHICLE_META[vehicleType].label.toLowerCase()} saved yet.
-              Add one from Vehicles to continue.
-            </div>
-          ) : (
+          {matchingVehicles.length > 0 && (
             <div className="mt-4 flex flex-col gap-2">
               {matchingVehicles.map((v) => (
                 <button
@@ -111,8 +117,129 @@ export function VehicleStep({
               ))}
             </div>
           )}
+          <AddVehicleInline
+            vehicleType={vehicleType}
+            hasNoVehiclesOfType={matchingVehicles.length === 0}
+            isFirstVehicle={vehicles.length === 0}
+            onVehicleAdded={(vehicle) => {
+              onVehicleAdded(vehicle);
+              onSelectVehicle(vehicle.id);
+            }}
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+function AddVehicleInline({
+  vehicleType,
+  hasNoVehiclesOfType,
+  isFirstVehicle,
+  onVehicleAdded,
+}: {
+  vehicleType: VehicleType;
+  hasNoVehiclesOfType: boolean;
+  isFirstVehicle: boolean;
+  onVehicleAdded: (vehicle: Vehicle) => void;
+}) {
+  const [open, setOpen] = useState(hasNoVehiclesOfType);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ plateNumber: "", make: "", model: "", color: "" });
+
+  async function handleAdd() {
+    setSaving(true);
+    const res = await fetch("/api/v1/vehicles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, type: vehicleType, isDefault: isFirstVehicle }),
+    });
+    const json = await res.json().catch(() => null);
+    setSaving(false);
+
+    if (!res.ok || !json?.success) {
+      toast.error(json?.error?.message ?? "Couldn't add vehicle");
+      return;
+    }
+
+    toast.success("Vehicle added");
+    onVehicleAdded({
+      id: json.data.id,
+      plateNumber: json.data.plateNumber,
+      type: json.data.type,
+      make: json.data.make ?? "",
+      model: json.data.model ?? "",
+      color: json.data.color ?? "",
+      isDefault: json.data.isDefault,
+      isActive: json.data.isActive,
+    });
+    setForm({ plateNumber: "", make: "", model: "", color: "" });
+    setOpen(false);
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+      >
+        <Plus className="size-4" />
+        Add a different vehicle
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 rounded-[var(--radius-lg)] border border-dashed border-border p-4">
+      {hasNoVehiclesOfType && (
+        <p className="text-sm text-muted-foreground">
+          You don&apos;t have a saved vehicle for this type yet — add one below to continue.
+        </p>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label>Plate number</Label>
+          <Input
+            placeholder="MH12AB1234"
+            value={form.plateNumber}
+            onChange={(e) => setForm((f) => ({ ...f, plateNumber: e.target.value }))}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Color</Label>
+          <Input
+            placeholder="White"
+            value={form.color}
+            onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Make</Label>
+          <Input
+            placeholder="Honda"
+            value={form.make}
+            onChange={(e) => setForm((f) => ({ ...f, make: e.target.value }))}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Model</Label>
+          <Input
+            placeholder="Activa"
+            value={form.model}
+            onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={handleAdd} disabled={saving || !form.plateNumber}>
+          {saving ? "Adding…" : "Add vehicle"}
+        </Button>
+        {!hasNoVehiclesOfType && (
+          <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

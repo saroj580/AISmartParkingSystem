@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { QrPreview } from "@/components/ui/qr-preview";
 import { VehicleTypeBadge } from "@/components/shared/vehicle-type-badge";
 import type { ParkingLot, Vehicle, VehicleType } from "@/types/domain";
+import { formatCurrency } from "@/lib/format";
 
 export function ConfirmationStep({
   lot,
@@ -85,7 +86,7 @@ export function ConfirmationStep({
           <div className="flex items-center justify-between border-t border-border pt-2.5">
             <span className="font-semibold">Total paid</span>
             <span className="font-display text-base font-semibold">
-              ${total.toFixed(2)}
+              {formatCurrency(total)}
             </span>
           </div>
         </div>

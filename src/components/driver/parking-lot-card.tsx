@@ -5,6 +5,7 @@ import { AvailabilityRow } from "@/components/shared/availability-row";
 import { LotStatusBadge } from "@/components/shared/status-badge";
 import { lowestHourlyRate } from "@/data/lots";
 import { cn } from "@/lib/cn";
+import { formatCurrency } from "@/lib/format";
 
 export function ParkingLotCard({
   lot,
@@ -59,7 +60,7 @@ export function ParkingLotCard({
           </div>
           <p className="text-sm">
             <span className="font-semibold">
-              ${lowestHourlyRate(lot).toFixed(2)}
+              {formatCurrency(lowestHourlyRate(lot))}
             </span>
             <span className="text-xs text-muted-foreground">/hr from</span>
           </p>

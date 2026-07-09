@@ -68,13 +68,13 @@ export function Hero() {
             className="mt-9 flex flex-col gap-3 sm:flex-row"
           >
             <Button size="xl" asChild>
-              <Link href="/driver">
+              <Link href="/register?role=DRIVER">
                 Find parking near you
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
             <Button size="xl" variant="secondary" asChild>
-              <Link href="/operator">List your parking lot</Link>
+              <Link href="/register?role=OPERATOR">List your parking lot</Link>
             </Button>
           </motion.div>
 

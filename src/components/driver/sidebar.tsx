@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/cn";
-import { DRIVER_NOTIFICATIONS } from "@/data/payments";
 
 const NAV = [
   { href: "/driver", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -27,9 +26,9 @@ const NAV = [
   { href: "/driver/settings", label: "Settings", icon: Settings },
 ];
 
-export function DriverSidebar() {
+export function DriverSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
-  const unread = DRIVER_NOTIFICATIONS.filter((n) => !n.read).length;
+  const unread = unreadCount;
 
   return (
     <aside className="hidden w-[240px] shrink-0 flex-col border-r border-border bg-surface-muted/40 lg:flex">

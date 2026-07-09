@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LotStatusBadge } from "@/components/shared/status-badge";
 import { VEHICLE_META, VEHICLE_TYPES, availabilityLevel } from "@/constants/vehicles";
-import { PARKING_LOTS, getLot, occupancyPct } from "@/data/lots";
+import { occupancyPct } from "@/data/lots";
+import { LotMap } from "@/components/shared/lot-map";
+import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/session";
+import { getOwnedLotDetail } from "@/server/views/parking-lots";
 import { cn } from "@/lib/cn";
-
-export function generateStaticParams() {
-  return PARKING_LOTS.map((lot) => ({ id: lot.id }));
-}
+import { formatCurrency } from "@/lib/format";
 
 const LEVEL_TEXT = {
   available: "text-available",
@@ -24,7 +25,9 @@ export default async function OperatorLotDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const lot = getLot(id);
+  const session = await getSessionUser();
+  const operatorProfile = await prisma.operatorProfile.findUniqueOrThrow({ where: { userId: session!.id } });
+  const lot = await getOwnedLotDetail(operatorProfile.id, id);
   if (!lot) notFound();
 
   return (
@@ -54,7 +57,7 @@ export default async function OperatorLotDetailPage({
             {lot.addressLine}, {lot.city}, {lot.state} {lot.postalCode}
           </p>
         </div>
-        <Button variant="secondary">
+        <Button variant="secondary" disabled title="Coming soon">
           <Pencil className="size-4" />
           Edit lot details
         </Button>
@@ -111,6 +114,17 @@ export default async function OperatorLotDetailPage({
               {lot.description}
             </p>
           </section>
+
+          <section>
+            <h2 className="text-[15px] font-semibold">Location</h2>
+            <LotMap
+              latitude={lot.latitude}
+              longitude={lot.longitude}
+              name={lot.name}
+              address={`${lot.addressLine}, ${lot.city}`}
+              className="mt-3"
+            />
+          </section>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -137,7 +151,7 @@ export default async function OperatorLotDetailPage({
               {VEHICLE_TYPES.map((type) => (
                 <div key={type} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{VEHICLE_META[type].label}</span>
-                  <span className="font-medium">${lot.pricing[type].baseRatePerHour.toFixed(2)}/hr</span>
+                  <span className="font-medium">{formatCurrency(lot.pricing[type].baseRatePerHour)}/hr</span>
                 </div>
               ))}
             </div>

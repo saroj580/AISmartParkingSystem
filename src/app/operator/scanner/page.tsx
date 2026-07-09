@@ -6,53 +6,83 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { OPERATOR_BOOKINGS } from "@/data/operator-bookings";
 import { cn } from "@/lib/cn";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface ScanResult {
   id: string;
   bookingNumber: string;
   driverName: string;
   lotName: string;
+  vehiclePlate: string;
   action: "check-in" | "check-out";
   success: boolean;
+  message?: string;
   time: string;
 }
 
 export default function QrScannerPage() {
   const [code, setCode] = useState("");
+  const [action, setAction] = useState<"check-in" | "check-out">("check-in");
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<ScanResult[]>([]);
 
-  function handleScan() {
-    if (!code.trim()) return;
+  async function handleScan() {
+    const trimmed = code.trim();
+    if (!trimmed) return;
     setScanning(true);
-    setTimeout(() => {
-      const booking = OPERATOR_BOOKINGS[Math.floor(Math.random() * OPERATOR_BOOKINGS.length)]!;
-      const success = Math.random() > 0.12;
-      const action: ScanResult["action"] = Math.random() > 0.5 ? "check-in" : "check-out";
+
+    try {
+      const res = await fetch(`/api/v1/qr/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: trimmed }),
+      });
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok || !json?.success) {
+        setResults((prev) => [
+          {
+            id: `${Date.now()}`,
+            bookingNumber: "—",
+            driverName: "—",
+            lotName: "—",
+            vehiclePlate: "—",
+            action,
+            success: false,
+            message: apiErrorMessage(json, "Scan failed"),
+            time: new Date().toISOString(),
+          },
+          ...prev,
+        ].slice(0, 8));
+        return;
+      }
+
+      const booking = json.data;
       setResults((prev) => [
         {
           id: `${Date.now()}`,
           bookingNumber: booking.bookingNumber,
           driverName: booking.driverName ?? "Unknown",
-          lotName: booking.lotName,
+          lotName: booking.lotName ?? "—",
+          vehiclePlate: booking.vehiclePlate ?? "—",
           action,
-          success,
+          success: true,
           time: new Date().toISOString(),
         },
         ...prev,
       ].slice(0, 8));
+    } finally {
       setScanning(false);
       setCode("");
-    }, 900);
+    }
   }
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <PageHeader
         title="QR scanner"
-        description="Scan or enter a booking code to check vehicles in and out."
+        description="Scan or enter a booking's QR code to check vehicles in and out."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -69,20 +99,42 @@ export default function QrScannerPage() {
             )}
           </div>
           <p className="text-center text-sm text-muted-foreground">
-            Camera scanning is simulated in this preview. Enter a code manually below.
+            Camera scanning isn&apos;t wired up yet — paste the QR code&apos;s value below. It&apos;s issued
+            once a booking is confirmed and paid.
           </p>
 
+          <div className="flex w-full gap-2">
+            <button
+              onClick={() => setAction("check-in")}
+              className={cn(
+                "flex-1 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors",
+                action === "check-in" ? "border-brand bg-brand-subtle text-brand-subtle-foreground" : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              Check in
+            </button>
+            <button
+              onClick={() => setAction("check-out")}
+              className={cn(
+                "flex-1 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors",
+                action === "check-out" ? "border-brand bg-brand-subtle text-brand-subtle-foreground" : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              Check out
+            </button>
+          </div>
+
           <div className="flex w-full flex-col gap-1.5">
-            <Label htmlFor="code">Booking code</Label>
+            <Label htmlFor="code">QR code value</Label>
             <div className="flex gap-2">
               <Input
                 id="code"
-                placeholder="PK-8F2A9C"
+                placeholder="Paste the signed QR token"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleScan()}
               />
-              <Button onClick={handleScan} disabled={scanning}>
+              <Button onClick={handleScan} disabled={scanning || !code.trim()}>
                 {scanning ? "Scanning…" : "Scan"}
               </Button>
             </div>
@@ -109,10 +161,14 @@ export default function QrScannerPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-medium">
-                      {r.driverName}
-                      <span className="ml-2 font-mono text-xs text-muted-foreground">{r.bookingNumber}</span>
+                      {r.success ? r.driverName : "Scan failed"}
+                      {r.success && (
+                        <span className="ml-2 font-mono text-xs text-muted-foreground">{r.bookingNumber}</span>
+                      )}
                     </p>
-                    <p className="text-xs text-muted-foreground">{r.lotName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.success ? `${r.lotName} · ${r.vehiclePlate}` : r.message}
+                    </p>
                   </div>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     {r.action === "check-in" ? <LogIn className="size-3.5" /> : <LogOut className="size-3.5" />}
@@ -123,10 +179,6 @@ export default function QrScannerPage() {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="rounded-[var(--radius-lg)] border border-dashed border-border p-4 text-xs text-muted-foreground">
-        Tip: try scanning {OPERATOR_BOOKINGS[0]?.bookingNumber} — sample booking codes work in this demo.
       </div>
     </div>
   );

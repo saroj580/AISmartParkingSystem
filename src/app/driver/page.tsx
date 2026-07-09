@@ -5,22 +5,35 @@ import { Badge } from "@/components/ui/badge";
 import { MetricCard } from "@/components/shared/metric-card";
 import { ParkingLotCard } from "@/components/driver/parking-lot-card";
 import { BookingCard } from "@/components/driver/booking-card";
-import { CURRENT_DRIVER } from "@/data/user";
-import { ACTIVE_BOOKING, UPCOMING_BOOKING } from "@/data/bookings";
-import { PARKING_LOTS } from "@/data/lots";
-import { DRIVER_NOTIFICATIONS } from "@/data/payments";
-import { formatDateTime, relativeTime } from "@/lib/format";
+import { getSessionUser } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { listActiveParkingLots } from "@/server/views/parking-lots";
+import { getDriverActiveAndUpcoming } from "@/server/views/bookings";
+import { getDriverStats } from "@/server/views/driver-stats";
+import { listUserNotifications } from "@/server/views/notifications";
+import { formatCurrency, formatDateTime, relativeTime } from "@/lib/format";
 
-export default function DriverDashboardPage() {
+export default async function DriverDashboardPage() {
+  const session = await getSessionUser();
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: session!.id } });
+  const driverProfile = await prisma.driverProfile.findUniqueOrThrow({ where: { userId: user.id } });
+
+  const [stats, { active: activeBooking, upcoming: upcomingBooking }, lots, notifications] = await Promise.all([
+    getDriverStats(driverProfile.id),
+    getDriverActiveAndUpcoming(driverProfile.id),
+    listActiveParkingLots(),
+    listUserNotifications(user.id),
+  ]);
+
   const greeting = getGreeting();
-  const nearby = PARKING_LOTS.filter((l) => l.status === "ACTIVE").slice(0, 3);
+  const nearby = lots.slice(0, 3);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">
-            {greeting}, {CURRENT_DRIVER.name.split(" ")[0]}
+            {greeting}, {user.firstName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Here’s what’s happening with your parking today.
@@ -34,7 +47,7 @@ export default function DriverDashboardPage() {
         </Button>
       </div>
 
-      {ACTIVE_BOOKING && (
+      {activeBooking && (
         <div className="relative overflow-hidden rounded-[var(--radius-xl)] border border-brand/30 bg-brand-subtle p-6">
           <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
             <div className="flex items-start gap-4">
@@ -51,19 +64,19 @@ export default function DriverDashboardPage() {
                   </Badge>
                 </div>
                 <p className="mt-1 font-display text-lg font-semibold">
-                  {ACTIVE_BOOKING.lotName}
+                  {activeBooking.lotName}
                 </p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <MapPin className="size-3.5" />
-                  {ACTIVE_BOOKING.zoneName} · Space {ACTIVE_BOOKING.spaceCode}
+                  {activeBooking.zoneName} · Space {activeBooking.spaceCode}
                   <span className="mx-1">·</span>
                   <Clock className="size-3.5" />
-                  Checked in {relativeTime(ACTIVE_BOOKING.actualCheckInAt!)}
+                  Checked in {relativeTime(activeBooking.actualCheckInAt!)}
                 </p>
               </div>
             </div>
             <Button variant="secondary" asChild>
-              <Link href={`/driver/bookings/${ACTIVE_BOOKING.id}`}>
+              <Link href={`/driver/bookings/${activeBooking.id}`}>
                 View QR pass
                 <ArrowRight className="size-4" />
               </Link>
@@ -75,28 +88,28 @@ export default function DriverDashboardPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
           label="Total bookings"
-          value={CURRENT_DRIVER.stats.totalBookings.toString()}
+          value={stats.totalBookings.toString()}
           icon={<CalendarCheck />}
           trend={[4, 6, 5, 8, 7, 9, 11]}
           trendColor="#2a78d6"
         />
         <MetricCard
           label="Hours parked"
-          value={`${CURRENT_DRIVER.stats.hoursParked}h`}
+          value={`${stats.hoursParked}h`}
           icon={<Clock />}
           trend={[20, 24, 22, 30, 28, 34, 38]}
           trendColor="#1baf7a"
         />
         <MetricCard
           label="Total spent"
-          value={`$${CURRENT_DRIVER.stats.totalSpent.toLocaleString()}`}
+          value={formatCurrency(stats.totalSpent)}
           icon={<Wallet />}
           trend={[80, 120, 96, 140, 130, 160, 180]}
           trendColor="#eda100"
         />
         <MetricCard
           label="CO₂ saved"
-          value={`${CURRENT_DRIVER.stats.co2SavedKg} kg`}
+          value={`${stats.co2SavedKg} kg`}
           icon={<Leaf />}
           trend={[2, 3, 3, 4, 5, 5, 6]}
           trendColor="#4a3aa7"
@@ -116,7 +129,7 @@ export default function DriverDashboardPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {nearby.map((lot) => (
-              <ParkingLotCard key={lot.id} lot={lot} saved={CURRENT_DRIVER.savedLots.includes(lot.id)} />
+              <ParkingLotCard key={lot.id} lot={lot} />
             ))}
           </div>
         </div>
@@ -131,8 +144,8 @@ export default function DriverDashboardPage() {
               View all
             </Link>
           </div>
-          {UPCOMING_BOOKING ? (
-            <BookingCard booking={UPCOMING_BOOKING} />
+          {upcomingBooking ? (
+            <BookingCard booking={upcomingBooking} />
           ) : (
             <div className="rounded-[var(--radius-lg)] border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
               No upcoming bookings
@@ -150,24 +163,28 @@ export default function DriverDashboardPage() {
               </Link>
             </div>
             <div className="flex flex-col divide-y divide-border rounded-[var(--radius-lg)] border border-border bg-card">
-              {DRIVER_NOTIFICATIONS.slice(0, 4).map((n) => (
-                <div key={n.id} className="flex gap-3 p-4">
-                  <span
-                    className={
-                      "mt-1.5 size-1.5 shrink-0 rounded-full " +
-                      (n.read ? "bg-border-strong" : "bg-brand")
-                    }
-                  />
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-medium leading-snug">
-                      {n.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatDateTime(n.createdAt)}
-                    </p>
+              {notifications.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">No recent activity</p>
+              ) : (
+                notifications.slice(0, 4).map((n) => (
+                  <div key={n.id} className="flex gap-3 p-4">
+                    <span
+                      className={
+                        "mt-1.5 size-1.5 shrink-0 rounded-full " +
+                        (n.read ? "bg-border-strong" : "bg-brand")
+                      }
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium leading-snug">
+                        {n.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {formatDateTime(n.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

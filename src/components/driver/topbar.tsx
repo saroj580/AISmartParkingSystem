@@ -13,12 +13,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CURRENT_DRIVER } from "@/data/user";
-import { DRIVER_NOTIFICATIONS } from "@/data/payments";
 import { initials } from "@/lib/format";
+import { useSignOut } from "@/lib/use-sign-out";
 
-export function DriverTopbar() {
-  const unread = DRIVER_NOTIFICATIONS.filter((n) => !n.read).length;
+export function DriverTopbar({
+  name,
+  email,
+  avatarColor,
+  unreadCount = 0,
+}: {
+  name: string;
+  email: string;
+  avatarColor: string;
+  unreadCount?: number;
+}) {
+  const signOut = useSignOut();
 
   return (
     <header className="flex h-16 items-center gap-4 border-b border-border px-4 sm:px-6">
@@ -37,7 +46,7 @@ export function DriverTopbar() {
         className="relative inline-flex size-9 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surface text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <Bell className="size-[18px]" />
-        {unread > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-full ring-2 ring-surface" />
         )}
       </Link>
@@ -47,18 +56,18 @@ export function DriverTopbar() {
           <Avatar>
             <AvatarFallback
               style={{
-                backgroundColor: `${CURRENT_DRIVER.avatarColor}22`,
-                color: CURRENT_DRIVER.avatarColor,
+                backgroundColor: `${avatarColor}22`,
+                color: avatarColor,
               }}
             >
-              {initials(CURRENT_DRIVER.name)}
+              {initials(name)}
             </AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>{CURRENT_DRIVER.name}</DropdownMenuLabel>
+          <DropdownMenuLabel>{name}</DropdownMenuLabel>
           <p className="px-2.5 pb-2 text-xs text-muted-foreground">
-            {CURRENT_DRIVER.email}
+            {email}
           </p>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
@@ -68,9 +77,7 @@ export function DriverTopbar() {
             <Link href="/driver/vehicles">Manage vehicles</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/">Sign out</Link>
-          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void signOut()}>Sign out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

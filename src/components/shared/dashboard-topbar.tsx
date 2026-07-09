@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { initials } from "@/lib/format";
+import { useSignOut } from "@/lib/use-sign-out";
 
 export function DashboardTopbar({
   searchPlaceholder,
@@ -30,6 +31,8 @@ export function DashboardTopbar({
   settingsHref: string;
   unreadCount?: number;
 }) {
+  const signOut = useSignOut();
+
   return (
     <header className="flex h-16 items-center gap-4 border-b border-border px-4 sm:px-6">
       <div className="flex-1">
@@ -67,9 +70,7 @@ export function DashboardTopbar({
             <Link href={settingsHref}>Account settings</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/">Sign out</Link>
-          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => void signOut()}>Sign out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

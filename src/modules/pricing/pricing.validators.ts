@@ -7,7 +7,7 @@ export const createPricingRuleSchema = z.object({
   baseRatePerHour: z.number().positive(),
   dailyMaxRate: z.number().positive().optional(),
   weekendMultiplier: z.number().min(1).max(5).default(1),
-  currency: z.string().trim().length(3).default("usd"),
+  currency: z.string().trim().length(3).default("inr"),
   effectiveFrom: z.coerce.date().default(() => new Date()),
   effectiveTo: z.coerce.date().optional(),
 });

@@ -3,7 +3,7 @@ import { MapPin, Clock } from "lucide-react";
 import type { Booking } from "@/types/domain";
 import { BookingStatusBadge } from "@/components/shared/status-badge";
 import { VehicleTypeBadge } from "@/components/shared/vehicle-type-badge";
-import { formatDateTime, formatDuration } from "@/lib/format";
+import { formatCurrency, formatDateTime, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 export function BookingCard({
@@ -53,7 +53,7 @@ export function BookingCard({
           {formatDateTime(booking.startTime)}
         </span>
         <span className="font-semibold">
-          ${booking.totalAmount.toFixed(2)}
+          {formatCurrency(booking.totalAmount)}
         </span>
       </div>
     </Link>

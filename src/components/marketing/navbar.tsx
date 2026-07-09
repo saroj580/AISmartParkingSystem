@@ -53,10 +53,10 @@ export function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/driver">Log in</Link>
+            <Link href="/login">Log in</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/driver">Get started</Link>
+            <Link href="/register">Get started</Link>
           </Button>
         </div>
 
@@ -85,10 +85,10 @@ export function Navbar() {
           </nav>
           <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
             <Button variant="secondary" size="sm" className="flex-1" asChild>
-              <Link href="/driver">Log in</Link>
+              <Link href="/login">Log in</Link>
             </Button>
             <Button size="sm" className="flex-1" asChild>
-              <Link href="/driver">Get started</Link>
+              <Link href="/register">Get started</Link>
             </Button>
             <ThemeToggle />
           </div>
