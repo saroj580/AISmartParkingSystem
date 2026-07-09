@@ -22,7 +22,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <PageHeader title="Platform settings" description="Global configuration for the Parkly platform." />
+      <PageHeader title="Platform settings" description="Global configuration for the HamroPark platform." />
 
       <section className="rounded-[var(--radius-lg)] border border-border bg-card p-6">
         <h2 className="text-[15px] font-semibold">Billing & fees</h2>
@@ -55,7 +55,7 @@ export default function AdminSettingsPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Support email</Label>
-            <Input defaultValue="support@parkly.com" type="email" />
+            <Input defaultValue="support@hamropark.com" type="email" />
           </div>
         </div>
         <Button className="mt-6" onClick={() => toast.success("Settings saved")}>

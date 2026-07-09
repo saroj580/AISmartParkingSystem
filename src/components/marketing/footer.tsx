@@ -47,8 +47,7 @@ export function Footer() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-              The operating system for modern parking — real-time inventory,
-              instant reservations, and QR-based access for every vehicle
+              Parking made easy, for us. Real-time inventory, instant reservations, and QR-based access for every vehicle
               type.
             </p>
           </div>
@@ -75,7 +74,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © 2026 Parkly, Inc. All rights reserved.
+            © 2026 HamroPark, Inc. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
             Made for drivers, operators, and cities.

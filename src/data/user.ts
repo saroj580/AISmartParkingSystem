@@ -28,7 +28,7 @@ export const CURRENT_OPERATOR = {
 export const CURRENT_ADMIN = {
   id: "adm_root",
   name: "Priya Nair",
-  email: "priya@parkly.com",
+  email: "priya@hamropark.com",
   avatarColor: "#10B981",
 };
 

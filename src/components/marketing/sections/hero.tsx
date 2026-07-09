@@ -56,7 +56,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.12 }}
             className="mt-6 max-w-lg text-pretty text-lg leading-relaxed text-muted-foreground"
           >
-            Parkly finds, holds, and unlocks the exact space you need — for two,
+            HamroPark finds, holds, and unlocks the exact space you need — for two,
             three, and four-wheelers — with real-time availability and a QR
             pass that gets you in and out in seconds.
           </motion.p>

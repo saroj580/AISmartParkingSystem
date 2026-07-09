@@ -21,7 +21,7 @@ export function Cta() {
             </h2>
             <p className="mx-auto mt-4 max-w-md text-pretty text-brand-foreground/80">
               Join thousands of drivers and hundreds of operators already
-              running on Parkly.
+              using HamroPark for seamless parking.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button

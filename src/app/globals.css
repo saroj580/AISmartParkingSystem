@@ -2,9 +2,9 @@
 @import "tw-animate-css";
 
 /* ────────────────────────────────────────────────────────────
-   Smart Parking — Design System
-   A premium, quiet interface. Ink-forward neutrals, a single
-   confident indigo brand, and semantic availability signals.
+   HamroPark — Design System
+   A premium, quiet interface. Ink-forward neutrals, a confident
+   dark blue brand with green accents, and semantic availability signals.
    ──────────────────────────────────────────────────────────── */
 
 @theme {
@@ -21,11 +21,11 @@
   --radius-xl: 1.125rem;
   --radius-2xl: 1.5rem;
 
-  --shadow-xs: 0 1px 2px 0 rgb(16 18 27 / 0.04);
-  --shadow-sm: 0 1px 3px 0 rgb(16 18 27 / 0.06), 0 1px 2px -1px rgb(16 18 27 / 0.06);
-  --shadow-md: 0 4px 12px -2px rgb(16 18 27 / 0.08), 0 2px 6px -2px rgb(16 18 27 / 0.05);
-  --shadow-lg: 0 12px 32px -8px rgb(16 18 27 / 0.12), 0 4px 12px -4px rgb(16 18 27 / 0.06);
-  --shadow-glow: 0 0 0 1px rgb(79 70 229 / 0.08), 0 8px 28px -6px rgb(79 70 229 / 0.24);
+  --shadow-xs: 0 1px 2px 0 rgb(15 52 96 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(15 52 96 / 0.06), 0 1px 2px -1px rgb(15 52 96 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(15 52 96 / 0.08), 0 2px 6px -2px rgb(15 52 96 / 0.05);
+  --shadow-lg: 0 12px 32px -8px rgb(15 52 96 / 0.12), 0 4px 12px -4px rgb(15 52 96 / 0.06);
+  --shadow-glow: 0 0 0 1px rgb(15 52 96 / 0.08), 0 8px 28px -6px rgb(15 52 96 / 0.24);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -42,11 +42,11 @@
   --input: oklch(0.922 0.005 260);
   --ring: oklch(0.55 0.19 274);
 
-  --brand: oklch(0.53 0.2 275);
-  --brand-hover: oklch(0.475 0.2 275);
+  --brand: oklch(0.35 0.12 265);
+  --brand-hover: oklch(0.42 0.12 265);
   --brand-foreground: oklch(0.99 0 0);
-  --brand-subtle: oklch(0.955 0.02 275);
-  --brand-subtle-foreground: oklch(0.44 0.19 275);
+  --brand-subtle: oklch(0.955 0.02 265);
+  --brand-subtle-foreground: oklch(0.30 0.12 265);
 
   --available: oklch(0.63 0.16 155);
   --available-subtle: oklch(0.955 0.04 158);
@@ -81,11 +81,11 @@
   --input: oklch(0.31 0.014 265);
   --ring: oklch(0.62 0.19 274);
 
-  --brand: oklch(0.62 0.19 274);
-  --brand-hover: oklch(0.68 0.18 274);
+  --brand: oklch(0.55 0.15 265);
+  --brand-hover: oklch(0.62 0.15 265);
   --brand-foreground: oklch(0.99 0 0);
-  --brand-subtle: oklch(0.28 0.05 274);
-  --brand-subtle-foreground: oklch(0.82 0.11 274);
+  --brand-subtle: oklch(0.28 0.05 265);
+  --brand-subtle-foreground: oklch(0.75 0.12 265);
 
   --available: oklch(0.7 0.16 158);
   --available-subtle: oklch(0.31 0.06 158);

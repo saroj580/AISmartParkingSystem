@@ -1,7 +1,7 @@
 "use client";
 
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { divIcon } from "leaflet";
+import { divIcon } from "leaflet"; 
 import "leaflet/dist/leaflet.css";
 
 // Brand-colored SVG pin as a divIcon — avoids Leaflet's default marker

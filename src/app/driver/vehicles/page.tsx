@@ -52,7 +52,7 @@ export default function VehiclesPage() {
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <PageHeader
         title="Vehicles"
-        description="Manage the vehicles you park with Parkly."
+        description="Manage the vehicles you park with HamroPark."
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>

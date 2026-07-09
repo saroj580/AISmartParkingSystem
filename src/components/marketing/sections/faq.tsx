@@ -8,8 +8,8 @@ import { cn } from "@/lib/cn";
 
 const FAQS = [
   {
-    q: "Which vehicle types does Parkly support?",
-    a: "Parkly is built around three vehicle categories: two-wheelers (motorcycles and scooters), three-wheelers (auto-rickshaws and similar), and four-wheelers (cars, SUVs, and vans). Every lot displays live availability and pricing separately for each type.",
+    q: "Which vehicle types does HamroPark support?",
+    a: "HamroPark is built around three vehicle categories: two-wheelers (motorcycles and scooters), three-wheelers (auto-rickshaws and similar), and four-wheelers (cars, SUVs, and vans). Every lot displays live availability and pricing separately for each type.",
   },
   {
     q: "What happens if I'm late to check in?",

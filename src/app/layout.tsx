@@ -24,8 +24,8 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Parkly — Smart Parking, Solved",
-    template: "%s · Parkly",
+    default: "HamroPark — Parking Made Easy, For Us",
+    template: "%s · HamroPark",
   },
   description:
     "The operating system for modern parking. Find, reserve, and pay for parking in seconds — for two, three, and four wheelers.",

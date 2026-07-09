@@ -25,7 +25,7 @@ export default function AdminAnalyticsPage() {
           Platform analytics
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          A bird’s-eye view of every operator, lot, and driver on Parkly.
+          A bird&apos;s-eye view of every operator, lot, and driver on HamroPark.
         </p>
       </div>
 

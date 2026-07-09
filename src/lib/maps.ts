@@ -23,7 +23,23 @@ export async function geocodeAddress(address: string): Promise<GeocodedAddress> 
       Accept: "application/json",
     },
   });
-  // ... parses lat/lon/display_name — no API key needed
+  
+  const results = (await response.json()) as Array<{
+    lat: string;
+    lon: string;
+    display_name: string;
+  }>;
+
+  if (!results || results.length === 0) {
+    throw new Error(`Address not found: ${address}`);
+  }
+
+  const result = results[0]!;
+  return {
+    latitude: parseFloat(result.lat),
+    longitude: parseFloat(result.lon),
+    formattedAddress: result.display_name,
+  };
 }
 
 const EARTH_RADIUS_KM = 6371;
