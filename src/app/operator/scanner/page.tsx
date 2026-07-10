@@ -21,9 +21,18 @@ interface ScanResult {
   time: string;
 }
 
+async function callScanApi(action: "check-in" | "check-out", code: string) {
+  const res = await fetch(`/api/v1/qr/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  const json = await res.json().catch(() => null);
+  return { ok: res.ok && !!json?.success, json };
+}
+
 export default function QrScannerPage() {
   const [code, setCode] = useState("");
-  const [action, setAction] = useState<"check-in" | "check-out">("check-in");
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<ScanResult[]>([]);
 
@@ -33,14 +42,18 @@ export default function QrScannerPage() {
     setScanning(true);
 
     try {
-      const res = await fetch(`/api/v1/qr/${action}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: trimmed }),
-      });
-      const json = await res.json().catch(() => null);
+      // No manual "check in vs check out" toggle to get wrong — try check-in first, and if
+      // the QR simply isn't in the right state for that (e.g. it's already checked in), the
+      // vehicle is almost certainly leaving, so retry as a check-out automatically.
+      let action: "check-in" | "check-out" = "check-in";
+      let { ok, json } = await callScanApi(action, trimmed);
 
-      if (!res.ok || !json?.success) {
+      if (!ok && json?.error?.code === "BAD_REQUEST" && /status:/i.test(json?.error?.message ?? "")) {
+        action = "check-out";
+        ({ ok, json } = await callScanApi(action, trimmed));
+      }
+
+      if (!ok) {
         setResults((prev) => [
           {
             id: `${Date.now()}`,
@@ -100,29 +113,9 @@ export default function QrScannerPage() {
           </div>
           <p className="text-center text-sm text-muted-foreground">
             Camera scanning isn&apos;t wired up yet — paste the QR code&apos;s value below. It&apos;s issued
-            once a booking is confirmed and paid.
+            once a booking is confirmed and paid. We&apos;ll automatically check the vehicle in or out
+            based on its current status.
           </p>
-
-          <div className="flex w-full gap-2">
-            <button
-              onClick={() => setAction("check-in")}
-              className={cn(
-                "flex-1 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors",
-                action === "check-in" ? "border-brand bg-brand-subtle text-brand-subtle-foreground" : "border-border text-muted-foreground hover:bg-muted",
-              )}
-            >
-              Check in
-            </button>
-            <button
-              onClick={() => setAction("check-out")}
-              className={cn(
-                "flex-1 rounded-[var(--radius-md)] border px-3 py-2 text-sm font-medium transition-colors",
-                action === "check-out" ? "border-brand bg-brand-subtle text-brand-subtle-foreground" : "border-border text-muted-foreground hover:bg-muted",
-              )}
-            >
-              Check out
-            </button>
-          </div>
 
           <div className="flex w-full flex-col gap-1.5">
             <Label htmlFor="code">QR code value</Label>

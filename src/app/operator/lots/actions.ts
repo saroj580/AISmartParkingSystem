@@ -29,6 +29,8 @@ export interface CreateParkingLotInput {
   city: string;
   state?: string;
   postalCode?: string;
+  latitude?: number;
+  longitude?: number;
   vehicleTypes: Record<VehicleType, VehicleTypeConfig>;
 }
 
@@ -54,6 +56,8 @@ export async function createParkingLot(input: CreateParkingLotInput) {
       state: input.state,
       country: "India",
       postalCode: input.postalCode,
+      latitude: input.latitude,
+      longitude: input.longitude,
       openTime: "00:00",
       closeTime: "23:59",
       amenities: [],

@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle2, Download, MapPin } from "lucide-react";
+import { CheckCircle2, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { QrPreview } from "@/components/ui/qr-preview";
 import { VehicleTypeBadge } from "@/components/shared/vehicle-type-badge";
 import type { ParkingLot, Vehicle, VehicleType } from "@/types/domain";
 import { formatCurrency } from "@/lib/format";
@@ -47,17 +46,22 @@ export function ConfirmationStep({
       </motion.span>
 
       <h1 className="mt-5 font-display text-2xl font-semibold tracking-tight">
-        Booking confirmed
+        Booking created
       </h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Your space is reserved. Show this QR code at the entrance.
+        Your space is held. Pay at the lot to confirm it and unlock your QR pass.
       </p>
 
       <div className="mt-7 w-full rounded-[var(--radius-xl)] border border-border bg-card p-6">
-        <div className="mx-auto w-44">
-          <QrPreview token={`QR${bookingNumber}`} />
+        <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-border bg-surface-muted p-5">
+          <Clock className="size-6 text-muted-foreground" />
+          <p className="text-sm font-medium">Awaiting payment confirmation</p>
+          <p className="max-w-xs text-center text-xs text-muted-foreground">
+            Once the lot operator confirms your payment, your QR pass will appear on this
+            booking&apos;s page.
+          </p>
         </div>
-        <p className="mt-4 font-mono text-sm font-semibold tracking-wide">
+        <p className="mt-4 text-center font-mono text-sm font-semibold tracking-wide">
           {bookingNumber}
         </p>
 
@@ -84,7 +88,7 @@ export function ConfirmationStep({
             </span>
           </div>
           <div className="flex items-center justify-between border-t border-border pt-2.5">
-            <span className="font-semibold">Total paid</span>
+            <span className="font-semibold">Total due</span>
             <span className="font-display text-base font-semibold">
               {formatCurrency(total)}
             </span>
@@ -93,10 +97,6 @@ export function ConfirmationStep({
       </div>
 
       <div className="mt-7 flex w-full flex-col gap-2.5 sm:flex-row">
-        <Button variant="secondary" className="flex-1">
-          <Download className="size-4" />
-          Save pass
-        </Button>
         <Button className="flex-1" asChild>
           <Link href="/driver/bookings">View my bookings</Link>
         </Button>

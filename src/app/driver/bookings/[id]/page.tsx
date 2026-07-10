@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Car, Calendar, Receipt } from "lucide-react";
-import { QrPreview } from "@/components/ui/qr-preview";
-import { BookingStatusBadge, QrStatusBadge } from "@/components/shared/status-badge";
+import { ArrowLeft, MapPin, Car, Calendar, Receipt, Clock } from "lucide-react";
+import { BookingStatusBadge } from "@/components/shared/status-badge";
 import { VehicleTypeBadge } from "@/components/shared/vehicle-type-badge";
 import { CancelBookingButton } from "@/components/driver/cancel-booking-button";
+import { QrPassCard } from "@/components/driver/qr-pass-card";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import { getDriverBooking } from "@/server/views/bookings";
+import { qrService } from "@/modules/qr/qr.service";
 import { formatCurrency, formatDateTime, formatDuration } from "@/lib/format";
 
 export default async function BookingDetailPage({
@@ -20,6 +21,9 @@ export default async function BookingDetailPage({
   const driverProfile = await prisma.driverProfile.findUniqueOrThrow({ where: { userId: session!.id } });
   const booking = await getDriverBooking(driverProfile.id, id);
   if (!booking) notFound();
+
+  const hasQr = booking.status === "CONFIRMED" || booking.status === "ACTIVE";
+  const qrImage = hasQr ? await qrService.getImageForBooking(session!.id, booking.id).catch(() => null) : null;
 
   const durationMin = Math.round(
     (new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) /
@@ -49,17 +53,24 @@ export default async function BookingDetailPage({
         <BookingStatusBadge status={booking.status} />
       </div>
 
-      {(booking.status === "CONFIRMED" || booking.status === "ACTIVE") && (
-        <div className="flex flex-col items-center rounded-[var(--radius-xl)] border border-border bg-card p-7">
-          <div className="w-48">
-            <QrPreview token={booking.qrToken} />
-          </div>
-          <div className="mt-4">
-            <QrStatusBadge status={booking.qrStatus} />
-          </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Present this code at the {booking.status === "ACTIVE" ? "exit" : "entrance"} barrier to{" "}
-            {booking.status === "ACTIVE" ? "check out" : "check in"}.
+      {hasQr && qrImage && (
+        <QrPassCard
+          imageDataUrl={qrImage.imageDataUrl}
+          code={qrImage.code}
+          qrStatus={booking.qrStatus}
+          helperText={`Present this code at the ${booking.status === "ACTIVE" ? "exit" : "entrance"} barrier to ${
+            booking.status === "ACTIVE" ? "check out" : "check in"
+          }.`}
+        />
+      )}
+
+      {booking.status === "PENDING" && (
+        <div className="flex flex-col items-center gap-2 rounded-[var(--radius-xl)] border border-dashed border-border bg-card p-7 text-center">
+          <Clock className="size-6 text-muted-foreground" />
+          <p className="text-sm font-medium">Awaiting payment confirmation</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            Your QR pass will appear here once the lot operator confirms your payment
+            (e.g. cash at the gate).
           </p>
         </div>
       )}

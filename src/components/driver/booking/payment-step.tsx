@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { BadgeCheck, Wallet, Info } from "lucide-react";
+import { Wallet, Info } from "lucide-react";
 
 /**
- * Demo payment step — no payment gateway is wired up, so every booking is
- * hardcoded as paid. Confirming the booking marks it paid instantly and
- * generates the QR pass.
+ * No online payment gateway is configured — the booking is created as PENDING and stays
+ * that way until the lot operator confirms payment (e.g. cash at the gate), which is what
+ * actually issues the QR pass.
  */
 export function PaymentStep({
   totalLabel,
@@ -36,27 +36,17 @@ export function PaymentStep({
           <span>
             <span className="block text-sm font-medium">Amount due</span>
             <span className="block text-xs text-muted-foreground">
-              Charged on confirmation
+              Pay at the lot
             </span>
           </span>
         </span>
         <span className="font-display text-2xl font-semibold">{totalLabel}</span>
       </div>
 
-      <div className="flex items-start gap-3 rounded-[var(--radius-md)] border border-available/30 bg-available-subtle/50 p-4">
-        <BadgeCheck className="mt-0.5 size-4 shrink-0 text-available" />
-        <div className="text-sm">
-          <p className="font-medium text-available">Payment auto-approved</p>
-          <p className="mt-0.5 text-muted-foreground">
-            This environment runs without a payment gateway — your booking is
-            marked as paid the moment you confirm it.
-          </p>
-        </div>
-      </div>
-
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Info className="size-3.5" />
-        Your QR pass is generated immediately after confirmation.
+      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+        <Info className="mt-0.5 size-3.5 shrink-0" />
+        Your space is held once you confirm, but the QR pass only appears after the
+        lot operator confirms your payment on arrival.
       </p>
     </div>
   );

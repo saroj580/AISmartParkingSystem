@@ -32,7 +32,10 @@ export function AddLotDialog() {
     city: "",
     state: "",
     postalCode: "",
+    latitude: "",
+    longitude: "",
   });
+  const [showManualCoords, setShowManualCoords] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState(
     () =>
       Object.fromEntries(
@@ -49,17 +52,25 @@ export function AddLotDialog() {
 
   async function handleCreate() {
     setSaving(true);
-    const result = await createParkingLot({ ...form, vehicleTypes });
+    const result = await createParkingLot({
+      ...form,
+      latitude: form.latitude ? Number(form.latitude) : undefined,
+      longitude: form.longitude ? Number(form.longitude) : undefined,
+      vehicleTypes,
+    });
     setSaving(false);
 
     if (!result.success) {
       toast.error(result.error);
+      // The address couldn't be located automatically — let the operator pin it manually instead of retyping everything.
+      setShowManualCoords(true);
       return;
     }
 
     toast.success("Parking lot created");
     setOpen(false);
-    setForm({ name: "", description: "", addressLine: "", city: "", state: "", postalCode: "" });
+    setForm({ name: "", description: "", addressLine: "", city: "", state: "", postalCode: "", latitude: "", longitude: "" });
+    setShowManualCoords(false);
     router.refresh();
   }
 
@@ -77,7 +88,8 @@ export function AddLotDialog() {
         <DialogHeader>
           <DialogTitle>Add a parking lot</DialogTitle>
           <DialogDescription>
-            We&apos;ll geocode the address automatically and set up zones, spaces, and pricing for you.
+            We&apos;ll locate the address on the map and set up zones, spaces, and pricing for you. If we
+            can&apos;t find it automatically, you can pin the exact coordinates yourself.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,6 +144,51 @@ export function AddLotDialog() {
               />
             </div>
           </div>
+
+          {!showManualCoords ? (
+            <button
+              type="button"
+              onClick={() => setShowManualCoords(true)}
+              className="w-fit text-xs font-medium text-brand hover:underline"
+            >
+              Can&apos;t find it on the map? Enter coordinates manually
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-border bg-surface-muted p-3">
+              <p className="text-xs text-muted-foreground">
+                Look up the address on{" "}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${form.addressLine} ${form.city} ${form.state} India`,
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-brand hover:underline"
+                >
+                  Google Maps
+                </a>
+                , right-click the pin, and paste the coordinates below.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs">Latitude</Label>
+                  <Input
+                    placeholder="12.9758"
+                    value={form.latitude}
+                    onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs">Longitude</Label>
+                  <Input
+                    placeholder="77.6045"
+                    value={form.longitude}
+                    onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-3 border-t border-border pt-4">
             <p className="text-[13px] font-semibold">Zones, spaces & pricing</p>

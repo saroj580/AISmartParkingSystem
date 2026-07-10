@@ -2,7 +2,7 @@ import type { VehicleType } from "@prisma/client";
 import { parkingLotsRepository } from "@/modules/parking-lots/parking-lots.repository";
 import { parkingSpacesService } from "@/modules/parking-spaces/parking-spaces.service";
 import type { CreateLotInput, UpdateLotInput } from "@/modules/parking-lots/parking-lots.validators";
-import { geocodeAddress, haversineDistanceKm, boundingBoxForRadius } from "@/lib/maps";
+import { geocodeAddressWithFallback, haversineDistanceKm, boundingBoxForRadius } from "@/lib/maps";
 import { ForbiddenError, NotFoundError, BadRequestError } from "@/errors/AppError";
 import { cacheGetOrSet, CacheKeys } from "@/lib/redis";
 import { CACHE_TTL_SECONDS } from "@/constants/config";
@@ -22,9 +22,13 @@ export const parkingLotsService = {
     let longitude = input.longitude;
 
     if (latitude === undefined || longitude === undefined) {
-      const geocoded = await geocodeAddress(
-        `${input.addressLine}, ${input.city}, ${input.state ?? ""} ${input.postalCode ?? ""}, ${input.country}`
-      );
+      const geocoded = await geocodeAddressWithFallback({
+        addressLine: input.addressLine,
+        city: input.city,
+        state: input.state,
+        postalCode: input.postalCode,
+        country: input.country,
+      });
       latitude = geocoded.latitude;
       longitude = geocoded.longitude;
     }

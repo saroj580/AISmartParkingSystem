@@ -83,7 +83,7 @@ export function BookingWizard({
         return;
       }
 
-      toast.success("Booking confirmed — marked as paid");
+      toast.success("Booking created — pay at the lot to confirm it");
       setBooked({ bookingNumber: result.booking.bookingNumber, totalAmount: result.booking.totalAmount });
       setConfirmed(true);
       return;

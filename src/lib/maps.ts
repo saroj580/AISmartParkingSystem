@@ -23,7 +23,7 @@ export async function geocodeAddress(address: string): Promise<GeocodedAddress> 
       Accept: "application/json",
     },
   });
-  
+
   const results = (await response.json()) as Array<{
     lat: string;
     lon: string;
@@ -40,6 +40,42 @@ export async function geocodeAddress(address: string): Promise<GeocodedAddress> 
     longitude: parseFloat(result.lon),
     formattedAddress: result.display_name,
   };
+}
+
+export interface AddressParts {
+  addressLine: string;
+  city: string;
+  state?: string;
+  postalCode?: string;
+  country: string;
+}
+
+/**
+ * Geocodes an address, retrying with progressively less specific queries when the exact
+ * street address isn't in OpenStreetMap's data (common for smaller/newer buildings in India).
+ * Falls all the way back to city + country so lot creation never hard-fails on geocoding alone.
+ */
+export async function geocodeAddressWithFallback(parts: AddressParts): Promise<GeocodedAddress> {
+  const candidates = [
+    [parts.addressLine, parts.city, parts.state, parts.postalCode, parts.country],
+    [parts.addressLine, parts.city, parts.state, parts.country],
+    [parts.city, parts.state, parts.country],
+    [parts.city, parts.country],
+  ].map((segments) => segments.filter(Boolean).join(", "));
+
+  let lastError: unknown;
+  for (const query of candidates) {
+    try {
+      return await geocodeAddress(query);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw new Error(
+    `Couldn't locate "${parts.addressLine}, ${parts.city}" on the map. Double-check the spelling, or enter coordinates manually.`,
+    { cause: lastError }
+  );
 }
 
 const EARTH_RADIUS_KM = 6371;
