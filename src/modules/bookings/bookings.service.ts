@@ -187,19 +187,36 @@ export const bookingsService = {
     return booking;
   },
 
+  /**
+   * Only confirms the booking if it's still PENDING — if the expired-hold release job won the
+   * race and already flipped it to EXPIRED (and freed the space), this throws instead of silently
+   * reviving a booking whose space may since have been rebooked by someone else.
+   */
   async markConfirmed(bookingId: string) {
-    return bookingsRepository.update(bookingId, { status: "CONFIRMED" });
+    const confirmed = await bookingsRepository.transitionStatus(prisma, bookingId, "PENDING", "CONFIRMED");
+    if (!confirmed) {
+      throw new ConflictError("This booking is no longer pending — it may have expired or already been resolved");
+    }
+    return bookingsRepository.findByIdWithRelations(bookingId);
   },
 
   /** Background job: releases unpaid PENDING bookings whose hold window has lapsed. */
   async releaseExpiredHolds() {
     const expired = await bookingsRepository.findExpiredHolds(new Date());
+    let released = 0;
 
     for (const booking of expired) {
-      await prisma.$transaction(async (tx) => {
-        await tx.booking.update({ where: { id: booking.id }, data: { status: "EXPIRED" } });
-        await bookingsRepository.updateSpaceStatus(tx, booking.spaceId, "AVAILABLE");
+      const didRelease = await prisma.$transaction(async (tx) => {
+        const changed = await bookingsRepository.transitionStatus(tx, booking.id, "PENDING", "EXPIRED");
+        if (changed) {
+          await bookingsRepository.updateSpaceStatus(tx, booking.spaceId, "AVAILABLE");
+        }
+        return changed;
       });
+
+      // Booking was already confirmed/cancelled by someone else in the race window — nothing to release.
+      if (!didRelease) continue;
+      released++;
 
       await invalidateCache(`cache:availability:${booking.lotId}:*`);
 
@@ -211,7 +228,7 @@ export const bookingsService = {
         .catch((err) => log.error({ err, bookingId: booking.id }, "Failed to send booking expiry notification"));
     }
 
-    return expired.length;
+    return released;
   },
 
   /** Background job: sends a reminder email for confirmed bookings starting soon. */

@@ -2,13 +2,13 @@
 
 A production-oriented, modular-monolith backend for a multi-tenant smart
 parking platform: drivers book parking spaces by vehicle category, operators
-manage lots/pricing, payments run through Stripe, and check-in/out is done
-via signed QR codes.
+manage lots/pricing, payments are settled in cash at the lot and confirmed
+by the operator, and check-in/out is done via signed QR codes.
 
 ## Tech stack
 
 Next.js 15 (App Router, API-only) · TypeScript · Prisma ORM · PostgreSQL ·
-Redis · JWT (access + refresh) · Stripe · Cloudinary · Zod · Resend ·
+Redis · JWT (access + refresh) · Cloudinary · Zod · Resend ·
 Google Maps · `qrcode` · `node-cron`
 
 ## Documentation
@@ -42,10 +42,10 @@ cp .env.example .env
 ```
 
 Fill in at minimum: `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET`,
-`JWT_REFRESH_SECRET`, `QR_CODE_SECRET`, `STRIPE_SECRET_KEY`,
-`STRIPE_WEBHOOK_SECRET`. Everything else (Cloudinary, Resend, Google Maps)
-degrades gracefully in development if left as placeholders — those features
-will simply no-op or return a clear error when actually invoked.
+`JWT_REFRESH_SECRET`, `QR_CODE_SECRET`. Everything else (Cloudinary, Resend,
+Google Maps) degrades gracefully in development if left as placeholders —
+those features will simply no-op or return a clear error when actually
+invoked.
 
 ### 4. Set up the database
 
@@ -73,14 +73,6 @@ booking release, reminders, nightly analytics rollup, cleanup). It's
 intentionally decoupled from the request-serving process so it can be scaled
 or deployed independently.
 
-### 7. Stripe webhooks locally
-
-```bash
-stripe listen --forward-to localhost:3000/api/v1/payments/webhook
-```
-
-Copy the `whsec_...` value it prints into `STRIPE_WEBHOOK_SECRET` in `.env`.
-
 ## Useful scripts
 
 | Script | Purpose |
@@ -97,8 +89,9 @@ Copy the `whsec_...` value it prints into `STRIPE_WEBHOOK_SECRET` in `.env`.
 
 ## Roles
 
-- **DRIVER** — registers vehicles, searches/books parking, pays, receives a
-  QR code, checks in/out.
+- **DRIVER** — registers vehicles, searches/books parking, pays in cash at
+  the lot, receives a QR code once the operator confirms payment, checks
+  in/out.
 - **OPERATOR** — manages their own parking lots, zones, spaces, pricing
   rules; views bookings/analytics for their lots; scans QR codes.
 - **ADMIN** — platform-wide visibility: user management, operator

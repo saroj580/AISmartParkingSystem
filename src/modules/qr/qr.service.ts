@@ -9,6 +9,11 @@ import { generateSignedQrToken, verifySignedQrToken, renderQrCodeImage } from "@
 import { addSeconds } from "@/helpers/time";
 import { QR_CODE_VALIDITY_BUFFER_MINUTES } from "@/constants/config";
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/AppError";
+import { prisma } from "@/lib/prisma";
+import { invalidateCache } from "@/lib/redis";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("qr-service");
 
 async function requireLotAccess(userId: string, role: Role, operatorId: string) {
   if (role === "ADMIN") return;
@@ -119,5 +124,58 @@ export const qrService = {
       lotName: qr.booking.lot.name,
       vehiclePlate: qr.booking.vehicle.plateNumber,
     };
+  },
+
+  /**
+   * Background job: a QR code past its validity window means the driver either never scanned
+   * in (booking stuck CONFIRMED) or scanned in but never scanned out (booking stuck ACTIVE).
+   * Left alone, both leave the space permanently unbookable — so this releases the space and
+   * resolves the booking instead of merely marking the QR code EXPIRED.
+   */
+  async releaseLapsedCodes() {
+    const lapsed = await qrRepository.findLapsed(new Date());
+    let noShowCount = 0;
+    let autoCompletedCount = 0;
+
+    for (const qr of lapsed) {
+      const booking = qr.booking;
+
+      if (booking.status !== "CONFIRMED" && booking.status !== "ACTIVE") {
+        await qrRepository.markStatus(qr.id, "EXPIRED");
+        continue;
+      }
+
+      const nextStatus = booking.status === "ACTIVE" ? "COMPLETED" : "NO_SHOW";
+
+      await prisma.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: {
+            status: nextStatus,
+            ...(nextStatus === "COMPLETED" ? { actualCheckOutAt: new Date() } : {}),
+          },
+        });
+        await bookingsRepository.updateSpaceStatus(tx, booking.spaceId, "AVAILABLE");
+        await tx.qrCode.update({ where: { id: qr.id }, data: { status: "EXPIRED" } });
+      });
+
+      await invalidateCache(`cache:availability:${booking.lotId}:*`);
+
+      if (nextStatus === "COMPLETED") {
+        autoCompletedCount++;
+      } else {
+        noShowCount++;
+
+        const user = booking.driver.user;
+        notificationService
+          .sendBookingExpiry({ id: user.id, email: user.email, firstName: user.firstName }, {
+            bookingNumber: booking.bookingNumber,
+          })
+          .catch((err) => log.error({ err, bookingId: booking.id }, "Failed to send no-show notification"));
+      }
+    }
+
+    log.info({ noShowCount, autoCompletedCount }, "Released lapsed QR codes");
+    return { noShowCount, autoCompletedCount };
   },
 };

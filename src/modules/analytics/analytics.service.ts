@@ -1,8 +1,8 @@
-import { VehicleType } from "@prisma/client";
+import { Role, VehicleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { analyticsRepository, type DailyMetrics } from "@/modules/analytics/analytics.repository";
 import { parkingLotsRepository } from "@/modules/parking-lots/parking-lots.repository";
-import { ForbiddenError } from "@/errors/AppError";
+import { ForbiddenError, NotFoundError } from "@/errors/AppError";
 import { cacheGetOrSet, CacheKeys } from "@/lib/redis";
 import { CACHE_TTL_SECONDS } from "@/constants/config";
 import { createModuleLogger } from "@/lib/logger";
@@ -86,7 +86,17 @@ export const analyticsService = {
     return processed;
   },
 
-  async getForLot(lotId: string, from: Date, to: Date) {
+  async getForLot(userId: string, role: Role, lotId: string, from: Date, to: Date) {
+    if (role !== "ADMIN") {
+      const lot = await parkingLotsRepository.findById(lotId);
+      if (!lot) throw new NotFoundError("Parking lot");
+
+      const operatorId = await parkingLotsRepository.getOperatorIdForUser(userId);
+      if (!operatorId || lot.operatorId !== operatorId) {
+        throw new ForbiddenError("You do not have access to this parking lot's analytics");
+      }
+    }
+
     const cacheKey = CacheKeys.analyticsSummary(lotId, `${from.toISOString()}:${to.toISOString()}`);
 
     return cacheGetOrSet(cacheKey, CACHE_TTL_SECONDS.analyticsSummary, async () => {

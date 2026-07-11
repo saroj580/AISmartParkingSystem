@@ -17,6 +17,14 @@ export const qrRepository = {
     return prisma.qrCode.findUnique({ where: { bookingId } });
   },
 
+  /** QR codes past their validity window that were never scanned (ACTIVE) or never checked out (CHECKED_IN). */
+  findLapsed(now: Date) {
+    return prisma.qrCode.findMany({
+      where: { status: { in: ["ACTIVE", "CHECKED_IN"] }, expiresAt: { lt: now } },
+      include: { booking: { include: { driver: { include: { user: true } } } } },
+    });
+  },
+
   update(id: string, data: Prisma.QrCodeUpdateInput) {
     return prisma.qrCode.update({ where: { id }, data });
   },

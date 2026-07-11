@@ -44,6 +44,20 @@ export const bookingsRepository = {
     return tx.parkingSpace.update({ where: { id: spaceId }, data: { status } });
   },
 
+  /**
+   * Conditionally transitions a booking only if it's still in `fromStatus`, returning whether it
+   * took effect. Guards against races between concurrent status-changing operations that read the
+   * booking before writing (e.g. the expired-hold release job vs. an operator confirming payment) —
+   * a plain `update` would blindly overwrite whatever the other writer just committed.
+   */
+  async transitionStatus(tx: TxClient, bookingId: string, fromStatus: BookingStatus, toStatus: BookingStatus) {
+    const result = await tx.booking.updateMany({
+      where: { id: bookingId, status: fromStatus },
+      data: { status: toStatus },
+    });
+    return result.count === 1;
+  },
+
   findByIdWithRelations(id: string) {
     return prisma.booking.findUnique({
       where: { id },

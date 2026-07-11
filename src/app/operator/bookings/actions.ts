@@ -5,14 +5,19 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import { parkingLotsRepository } from "@/modules/parking-lots/parking-lots.repository";
-import { bookingsService } from "@/modules/bookings/bookings.service";
+import { bookingsRepository } from "@/modules/bookings/bookings.repository";
 import { qrService } from "@/modules/qr/qr.service";
 
 const nanoid = customAlphabet("0123456789", 10);
 
 /**
- * Records a cash payment for a booking and confirms it — the path for operators without a
- * connected Stripe account (common for smaller lots that only accept cash at the barrier).
+ * Records a cash payment for a booking and confirms it — the path for operators at lots that
+ * only accept cash at the barrier (there is no online payment gateway configured).
+ *
+ * The status transition is conditional (`PENDING` -> `CONFIRMED`, guarded inside the same
+ * transaction as the payment write) so this can never race the per-minute expired-hold release
+ * job into confirming — and creating a paid invoice for — a booking whose hold already lapsed
+ * and whose space may have been rebooked by someone else in the meantime.
  */
 export async function markBookingPaidCash(bookingId: string) {
   const session = await getSessionUser();
@@ -34,29 +39,37 @@ export async function markBookingPaidCash(bookingId: string) {
   }
 
   try {
-    const existingPayment = await prisma.payment.findUnique({ where: { bookingId } });
+    const confirmed = await prisma.$transaction(async (tx) => {
+      const didConfirm = await bookingsRepository.transitionStatus(tx, booking.id, "PENDING", "CONFIRMED");
+      if (!didConfirm) {
+        throw new Error("This booking's hold expired or it was already resolved — refresh and try again.");
+      }
 
-    if (existingPayment) {
-      await prisma.payment.update({
-        where: { id: existingPayment.id },
-        data: { status: "SUCCEEDED", paidAt: new Date() },
-      });
-    } else {
-      await prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          driverId: booking.driverId,
-          invoiceNumber: `INV-${nanoid()}`,
-          amount: booking.totalAmount,
-          currency: booking.currency,
-          status: "SUCCEEDED",
-          paidAt: new Date(),
-        },
-      });
-    }
+      const existingPayment = await tx.payment.findUnique({ where: { bookingId } });
 
-    const confirmed = await bookingsService.markConfirmed(booking.id);
-    await qrService.issueForBooking(confirmed.id);
+      if (existingPayment) {
+        await tx.payment.update({
+          where: { id: existingPayment.id },
+          data: { status: "SUCCEEDED", paidAt: new Date() },
+        });
+      } else {
+        await tx.payment.create({
+          data: {
+            bookingId: booking.id,
+            driverId: booking.driverId,
+            invoiceNumber: `INV-${nanoid()}`,
+            amount: booking.totalAmount,
+            currency: booking.currency,
+            status: "SUCCEEDED",
+            paidAt: new Date(),
+          },
+        });
+      }
+
+      return booking.id;
+    });
+
+    await qrService.issueForBooking(confirmed);
 
     revalidatePath("/operator/bookings");
     revalidatePath("/operator");

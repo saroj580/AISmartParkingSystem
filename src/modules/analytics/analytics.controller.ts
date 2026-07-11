@@ -2,14 +2,14 @@ import type { NextRequest } from "next/server";
 import { analyticsService } from "@/modules/analytics/analytics.service";
 import { analyticsRangeQuerySchema } from "@/modules/analytics/analytics.validators";
 import { ok } from "@/helpers/apiResponse";
-import type { AuthedRouteContext, RouteContext } from "@/types/api";
+import type { AuthedRouteContext } from "@/types/api";
 
 export const analyticsController = {
-  async forLot(req: NextRequest, ctx: RouteContext<{ id: string }>) {
+  async forLot(req: NextRequest, ctx: AuthedRouteContext<{ id: string }>) {
     const { id: lotId } = await ctx.params;
     const url = new URL(req.url);
     const query = analyticsRangeQuerySchema.parse(Object.fromEntries(url.searchParams.entries()));
-    const summary = await analyticsService.getForLot(lotId, query.from, query.to);
+    const summary = await analyticsService.getForLot(ctx.user.id, ctx.user.role, lotId, query.from, query.to);
     return ok(summary);
   },
 

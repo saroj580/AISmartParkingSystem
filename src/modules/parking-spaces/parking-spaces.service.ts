@@ -2,7 +2,7 @@ import { VehicleType, SpaceStatus } from "@prisma/client";
 import { parkingSpacesRepository } from "@/modules/parking-spaces/parking-spaces.repository";
 import { parkingLotsRepository } from "@/modules/parking-lots/parking-lots.repository";
 import type { BulkCreateSpacesInput, CreateSpaceInput, UpdateSpaceInput } from "@/modules/parking-spaces/parking-spaces.validators";
-import { ConflictError, ForbiddenError, NotFoundError } from "@/errors/AppError";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "@/errors/AppError";
 import { cacheGetOrSet, invalidateCache, CacheKeys } from "@/lib/redis";
 import { CACHE_TTL_SECONDS } from "@/constants/config";
 import type { PaginationResult } from "@/helpers/pagination";
@@ -97,6 +97,22 @@ export const parkingSpacesService = {
 
   async updateStatus(userId: string, spaceId: string, input: UpdateSpaceInput) {
     const space = await requireOwnedSpace(userId, spaceId);
+
+    if (input.status && input.status !== space.status) {
+      // RESERVED/OCCUPIED mean a live booking currently owns this space — only the booking/QR
+      // flow (creation, check-in/out, expiry) may move it in or out of those states. Letting an
+      // operator override it directly here would silently corrupt availability out from under
+      // that booking (e.g. a car still parked showing as bookable again).
+      if (space.status === "RESERVED" || space.status === "OCCUPIED") {
+        throw new ConflictError(
+          "This space has a live booking in progress — it can't be manually changed until that booking completes, is checked out, or is cancelled"
+        );
+      }
+      if (input.status === "RESERVED" || input.status === "OCCUPIED") {
+        throw new BadRequestError("RESERVED and OCCUPIED are set automatically by the booking flow and can't be assigned directly");
+      }
+    }
+
     const updated = await parkingSpacesRepository.update(spaceId, input);
     await invalidateAvailabilityCache(space.lotId);
     return updated;

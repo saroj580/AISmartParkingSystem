@@ -169,7 +169,8 @@ export function DriverSettingsClient({
           </Button>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
-          Card details are managed securely by Stripe at checkout and aren&apos;t stored here.
+          Online card payments aren&apos;t available yet — bookings are paid for in cash at the
+          lot and confirmed by the operator on arrival.
         </p>
       </section>
     </div>

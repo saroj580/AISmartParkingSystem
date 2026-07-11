@@ -18,13 +18,6 @@ export const paymentsRepository = {
     return prisma.payment.findUnique({ where: { bookingId } });
   },
 
-  findByStripeIntentId(stripePaymentIntentId: string) {
-    return prisma.payment.findUnique({
-      where: { stripePaymentIntentId },
-      include: { booking: true, driver: { include: { user: true } } },
-    });
-  },
-
   update(id: string, data: Prisma.PaymentUpdateInput) {
     return prisma.payment.update({ where: { id }, data });
   },
