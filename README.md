@@ -9,7 +9,7 @@ by the operator, and check-in/out is done via signed QR codes.
 
 Next.js 15 (App Router, API-only) · TypeScript · Prisma ORM · PostgreSQL ·
 Redis · JWT (access + refresh) · Cloudinary · Zod · Resend ·
-Google Maps · `qrcode` · `node-cron`
+OpenStreetMap (Nominatim geocoding + Leaflet maps) · `qrcode` · `node-cron`
 
 ## Documentation
 
@@ -42,10 +42,10 @@ cp .env.example .env
 ```
 
 Fill in at minimum: `DATABASE_URL`, `REDIS_URL`, `JWT_ACCESS_SECRET`,
-`JWT_REFRESH_SECRET`, `QR_CODE_SECRET`. Everything else (Cloudinary, Resend,
-Google Maps) degrades gracefully in development if left as placeholders —
-those features will simply no-op or return a clear error when actually
-invoked.
+`JWT_REFRESH_SECRET`, `QR_CODE_SECRET`. Everything else (Cloudinary, Resend)
+degrades gracefully in development if left as placeholders — those features
+will simply no-op or return a clear error when actually invoked. Geocoding
+and maps use OpenStreetMap (Nominatim + Leaflet), which need no API key.
 
 ### 4. Set up the database
 

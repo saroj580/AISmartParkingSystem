@@ -1,8 +1,4 @@
 import { env } from "@/lib/env";
-import { createModuleLogger } from "@/lib/logger";
-import { BadRequestError } from "@/errors/AppError";
-
-const log = createModuleLogger("google-maps");
 
 export interface GeocodedAddress {
   latitude: number;
